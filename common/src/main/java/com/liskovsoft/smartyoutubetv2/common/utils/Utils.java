@@ -17,6 +17,7 @@ import android.content.ComponentName;
 import android.content.Context;
 import android.content.Intent;
 import android.content.ServiceConnection;
+import android.content.pm.ActivityInfo;
 import android.content.pm.PackageManager;
 import android.content.pm.PackageManager.NameNotFoundException;
 import android.content.res.Resources;
@@ -44,6 +45,7 @@ import android.text.style.ForegroundColorSpan;
 import android.text.style.ImageSpan;
 import android.text.style.StyleSpan;
 import android.text.style.URLSpan;
+import android.util.DisplayMetrics;
 import android.view.KeyEvent;
 import android.view.View;
 import android.view.Window;
@@ -115,6 +117,7 @@ public class Utils {
             "org.smarttube.beta",
             "org.smarttube.stable",
             "app.smarttube.fdroid",
+            "app.smarttube.mobile",
     };
     public static final String[] BACKUP_PREFS = {
             "yt_service_prefs.xml",
@@ -1358,5 +1361,51 @@ public class Utils {
         MediaServiceData mediaServiceData = MediaServiceData.instance();
         mediaServiceData.persistNow();
         BlockedChannelData.instance(context).persistNow();
+    }
+
+    private static Boolean sIsMobileBuild;
+
+    /**
+     * Phones and tablets build (stmobile flavor)
+     */
+    public static boolean isMobileBuild(Context context) {
+        if (sIsMobileBuild == null) {
+            if (context == null) {
+                return false;
+            }
+
+            sIsMobileBuild = context.getResources().getBoolean(R.bool.is_mobile_build);
+        }
+
+        return sIsMobileBuild;
+    }
+
+    /**
+     * Metrics of the area the activity draws on.<br/>
+     * Mobile build in fullscreen mode: the system bars are hidden, so use the real display size
+     * (the regular metrics exclude the navigation bar).
+     */
+    public static void getWindowDisplayMetrics(Activity activity, DisplayMetrics outMetrics) {
+        if (isMobileBuild(activity) && GeneralData.instance(activity).isFullscreenModeEnabled()) {
+            activity.getWindowManager().getDefaultDisplay().getRealMetrics(outMetrics);
+        } else {
+            activity.getWindowManager().getDefaultDisplay().getMetrics(outMetrics);
+        }
+    }
+
+    /**
+     * The UI is designed for a landscape (TV) screen. Allow both landscape sides on phones and tablets.
+     */
+    public static void lockSensorLandscape(Activity activity) {
+        if (activity == null) {
+            return;
+        }
+
+        try {
+            activity.setRequestedOrientation(ActivityInfo.SCREEN_ORIENTATION_SENSOR_LANDSCAPE);
+        } catch (IllegalStateException e) {
+            // Android 8.0 (api 26): Only fullscreen opaque activities can request orientation
+            Log.e(TAG, "lockSensorLandscape error: %s", e.getMessage());
+        }
     }
 }

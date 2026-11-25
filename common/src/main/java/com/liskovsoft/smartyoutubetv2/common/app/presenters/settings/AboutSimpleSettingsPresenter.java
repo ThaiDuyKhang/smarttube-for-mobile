@@ -12,6 +12,7 @@ import com.liskovsoft.smartyoutubetv2.common.app.presenters.base.BasePresenter;
 import com.liskovsoft.smartyoutubetv2.common.app.presenters.dialogs.ATVBridgePresenter;
 import com.liskovsoft.smartyoutubetv2.common.app.presenters.dialogs.AmazonBridgePresenter;
 import com.liskovsoft.smartyoutubetv2.common.app.presenters.dialogs.AppUpdatePresenter;
+import com.liskovsoft.smartyoutubetv2.common.utils.Utils;
 
 public class AboutSimpleSettingsPresenter extends BasePresenter<Void> {
     private final AppUpdateChecker mUpdateChecker;
@@ -43,12 +44,20 @@ public class AboutSimpleSettingsPresenter extends BasePresenter<Void> {
     }
 
     private void appendAutoUpdateSwitch(AppDialogPresenter settingsPresenter) {
+        if (!AppUpdatePresenter.isUpdateSupported(getContext())) {
+            return;
+        }
+
         settingsPresenter.appendSingleSwitch(UiOptionItem.from(getContext().getString(R.string.check_updates_auto), optionItem -> {
             mUpdateChecker.setUpdateCheckEnabled(optionItem.isSelected());
         }, mUpdateChecker.isUpdateCheckEnabled()));
     }
 
     private void appendUpdateCheckButton(AppDialogPresenter settingsPresenter) {
+        if (!AppUpdatePresenter.isUpdateSupported(getContext())) {
+            return;
+        }
+
         OptionItem updateCheckOption = UiOptionItem.from(
                 getContext().getString(R.string.check_for_updates),
                 option -> AppUpdatePresenter.instance(getContext()).start(true));
@@ -57,6 +66,10 @@ public class AboutSimpleSettingsPresenter extends BasePresenter<Void> {
     }
 
     private void appendInstallBridge(AppDialogPresenter settingsPresenter) {
+        if (Utils.isMobileBuild(getContext())) {
+            return; // Android TV/Amazon only
+        }
+
         OptionItem installBridgeOption = UiOptionItem.from(
                 getContext().getString(R.string.enable_voice_search),
                 option -> startBridgePresenter());

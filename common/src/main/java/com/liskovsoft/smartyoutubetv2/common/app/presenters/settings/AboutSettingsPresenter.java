@@ -64,6 +64,10 @@ public class AboutSettingsPresenter extends BasePresenter<Void> {
     }
 
     private void appendAutoUpdateSwitch(AppDialogPresenter settingsPresenter) {
+        if (!AppUpdatePresenter.isUpdateSupported(getContext())) {
+            return;
+        }
+
         GeneralData generalData = GeneralData.instance(getContext());
         List<OptionItem> items = new ArrayList<>();
 
@@ -85,6 +89,10 @@ public class AboutSettingsPresenter extends BasePresenter<Void> {
     }
 
     private void appendUpdateCheckButton(AppDialogPresenter settingsPresenter) {
+        if (!AppUpdatePresenter.isUpdateSupported(getContext())) {
+            return;
+        }
+
         OptionItem updateCheckOption = UiOptionItem.from(
                 getContext().getString(R.string.check_for_updates),
                 option -> AppUpdatePresenter.instance(getContext()).start(true));
@@ -183,6 +191,10 @@ public class AboutSettingsPresenter extends BasePresenter<Void> {
     }
 
     private void appendInstallBridge(AppDialogPresenter settingsPresenter) {
+        if (Utils.isMobileBuild(getContext())) {
+            return; // Android TV/Amazon only
+        }
+
         OptionItem installBridgeOption = UiOptionItem.from(
                 getContext().getString(R.string.install_bridge),
                 option -> startBridgePresenter());

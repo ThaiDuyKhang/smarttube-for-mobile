@@ -44,11 +44,23 @@ public class AppUpdatePresenter extends BasePresenter<Void> implements AppUpdate
         return sInstance;
     }
 
+    /**
+     * The build has no update source (e.g. F-Droid or the mobile build)
+     */
+    public static boolean isUpdateSupported(Context context) {
+        return context != null && context.getResources().getStringArray(R.array.update_urls).length > 0;
+    }
+
     public static void unhold() {
         sInstance = null;
     }
 
     public void start(boolean forceCheck) {
+        if (mUpdateManifestUrls.length == 0) {
+            // Nothing to check. Don't show the endless loading.
+            return;
+        }
+
         mIsForceCheck = forceCheck;
 
         if (forceCheck) {

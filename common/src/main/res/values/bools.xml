@@ -1,0 +1,5 @@
+<?xml version="1.0" encoding="utf-8"?>
+<resources>
+    <!-- true for the phones and tablets build (stmobile flavor) -->
+    <bool name="is_mobile_build">false</bool>
+</resources>

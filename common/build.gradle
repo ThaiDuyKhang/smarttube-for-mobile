@@ -48,6 +48,10 @@ android {
         stbeta {}
         ststable {}
         stfdroid {}
+        stmobile {
+            // Submodules (youtubeapi, appupdatechecker2) don't declare this flavor
+            matchingFallbacks = ['stbeta']
+        }
     }
 }
 

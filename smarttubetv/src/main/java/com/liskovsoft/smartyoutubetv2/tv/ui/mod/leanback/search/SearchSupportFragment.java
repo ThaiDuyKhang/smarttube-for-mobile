@@ -1,6 +1,7 @@
 package com.liskovsoft.smartyoutubetv2.tv.ui.mod.leanback.search;
 
 import android.Manifest;
+import android.annotation.SuppressLint;
 import android.content.ActivityNotFoundException;
 import android.content.Intent;
 import android.graphics.drawable.Drawable;
@@ -14,7 +15,9 @@ import android.text.TextUtils;
 import android.text.TextWatcher;
 import android.util.Log;
 import android.view.LayoutInflater;
+import android.view.MotionEvent;
 import android.view.View;
+import android.view.ViewConfiguration;
 import android.view.View.OnFocusChangeListener;
 import android.view.ViewGroup;
 import android.view.WindowManager;
@@ -212,6 +215,7 @@ public class SearchSupportFragment extends Fragment {
 
     RowsSupportFragment mRowsSupportFragment;
     SearchBar mSearchBar;
+    private VerticalGridView mTouchResultsView;
     SearchEditText mSearchTextEditor;
     SpeechOrbView mSpeechOrbView;
     SearchResultProvider mProvider;
@@ -500,6 +504,90 @@ public class SearchSupportFragment extends Fragment {
             // Ensure search bar state consistency when using external recognizer
             mSearchBar.stopRecognition();
         }
+        initTouchSearchBarRestore();
+    }
+
+    /**
+     * Touch screen (mobile build): the search bar is hidden while the results are selected (TV users press UP to return to it).<br/>
+     * Tap on the empty area above the results to show the search bar and edit the query.<br/>
+     * NOTE: the listener only observes the touches (the results view keeps its own click/accessibility handling).
+     */
+    @SuppressLint("ClickableViewAccessibility")
+    private void initTouchSearchBarRestore() {
+        if (!Utils.isMobileBuild(getContext()) || mRowsSupportFragment == null) {
+            return;
+        }
+
+        VerticalGridView resultsView = mRowsSupportFragment.getVerticalGridView();
+
+        if (resultsView == null || resultsView == mTouchResultsView) {
+            return;
+        }
+
+        mTouchResultsView = resultsView;
+        final int touchSlop = ViewConfiguration.get(resultsView.getContext()).getScaledTouchSlop();
+
+        // NOTE: the listener receives only the touches that no result item has handled (empty area)
+        resultsView.setOnTouchListener(new View.OnTouchListener() {
+            private boolean mIsTap;
+            private float mDownX;
+            private float mDownY;
+
+            @Override
+            public boolean onTouch(View v, MotionEvent event) {
+                switch (event.getActionMasked()) {
+                    case MotionEvent.ACTION_DOWN:
+                        mIsTap = true;
+                        mDownX = event.getX();
+                        mDownY = event.getY();
+                        break;
+                    case MotionEvent.ACTION_MOVE:
+                        if (Math.abs(event.getX() - mDownX) > touchSlop || Math.abs(event.getY() - mDownY) > touchSlop) {
+                            mIsTap = false;
+                        }
+                        break;
+                    case MotionEvent.ACTION_UP:
+                        if (mIsTap && mSearchBar != null && mSearchBar.getVisibility() != View.VISIBLE
+                                && event.getY() < getResultsContentTop((VerticalGridView) v)) {
+                            showSearchBarAndKeyboard();
+                        }
+                        mIsTap = false;
+                        break;
+                    case MotionEvent.ACTION_CANCEL:
+                        mIsTap = false;
+                        break;
+                }
+
+                return false; // don't break the scrolling
+            }
+        });
+    }
+
+    private static int getResultsContentTop(VerticalGridView resultsView) {
+        int top = resultsView.getHeight();
+
+        for (int i = 0; i < resultsView.getChildCount(); i++) {
+            View child = resultsView.getChildAt(i);
+            if (child.getVisibility() == View.VISIBLE) {
+                top = Math.min(top, child.getTop());
+            }
+        }
+
+        return top;
+    }
+
+    private void showSearchBarAndKeyboard() {
+        if (mSearchBar == null || mSearchTextEditor == null) {
+            return;
+        }
+
+        // Same state as on TV after pressing UP: the first row is selected and the search bar is visible
+        if (mRowsSupportFragment != null) {
+            mRowsSupportFragment.setSelectedPosition(0, false);
+        }
+        mSearchBar.setVisibility(View.VISIBLE);
+        focusOnSearchField();
+        Helpers.showKeyboardAlt(mSearchTextEditor.getContext(), mSearchTextEditor);
     }
 
     @Override

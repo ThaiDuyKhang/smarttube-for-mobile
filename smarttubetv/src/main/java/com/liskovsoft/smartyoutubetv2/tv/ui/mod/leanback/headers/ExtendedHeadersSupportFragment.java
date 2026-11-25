@@ -49,6 +49,9 @@ public class ExtendedHeadersSupportFragment extends HeadersSupportFragment {
                         }
                     });
 
+                    // Touch screen: keep the original two-step behavior (first tap shows the section, second tap opens it)
+                    headerView.setTag(com.liskovsoft.smartyoutubetv2.common.R.id.single_tap_click_disabled, true);
+
                     // NEW CODE
                     headerView.setOnLongClickListener(v -> {
                         if (mOnHeaderLongPressedListener != null) {

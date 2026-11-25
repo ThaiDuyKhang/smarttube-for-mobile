@@ -11,6 +11,7 @@ import android.util.DisplayMetrics;
 import android.view.KeyCharacterMap.UnavailableException;
 import android.view.KeyEvent;
 import android.view.MotionEvent;
+import android.view.View;
 
 import androidx.annotation.NonNull;
 import androidx.annotation.Nullable;
@@ -42,6 +43,8 @@ public class MotherActivity extends FragmentActivity {
     private static final float DEFAULT_DENSITY = 2.0f; // xhdpi
     private static final float DEFAULT_WIDTH = 1920f; // xhdpi
     private static DisplayMetrics sCachedDisplayMetrics;
+    private static final long SYSTEM_BARS_CHECK_INTERVAL_MS = 2_000;
+    private SingleTapClickHelper mSingleTapClickHelper;
     protected static boolean sIsInPipMode;
     private ScreensaverManager mScreensaverManager;
     // Make static in case Don't keep activities enabled in Developer settings
@@ -69,6 +72,10 @@ public class MotherActivity extends FragmentActivity {
         //if (VERSION.SDK_INT != 26) {
         //    setRequestedOrientation(ActivityInfo.SCREEN_ORIENTATION_LANDSCAPE);
         //}
+        // Mobile build: the UI is designed for a landscape (TV) screen. Allow both landscape sides.
+        if (Utils.isMobileBuild(this)) {
+            Utils.lockSensorLandscape(this);
+        }
         super.onCreate(savedInstanceState);
 
         Log.d(TAG, "Starting %s...", this.getClass().getSimpleName());
@@ -91,11 +98,15 @@ public class MotherActivity extends FragmentActivity {
             //}
         }
 
-        if (mIsOculusQuestFixEnabled && VERSION.SDK_INT != 26) {
+        if (mIsOculusQuestFixEnabled && VERSION.SDK_INT != 26 && !Utils.isMobileBuild(this)) {
             setRequestedOrientation(ActivityInfo.SCREEN_ORIENTATION_LANDSCAPE);
         }
 
         mScreensaverManager = new ScreensaverManager(this); // moved below the theme to fix side effects
+
+        if (Utils.isMobileBuild(this)) {
+            mSingleTapClickHelper = new SingleTapClickHelper(this);
+        }
 
         //Helpers.addFullscreenListener(this);
 
@@ -117,8 +128,18 @@ public class MotherActivity extends FragmentActivity {
             mScreensaverManager.enable();
         }
 
+        if (mSingleTapClickHelper != null) {
+            mSingleTapClickHelper.beforeDispatch(event);
+        }
+
         try {
-            return super.dispatchTouchEvent(event);
+            boolean result = super.dispatchTouchEvent(event);
+
+            if (mSingleTapClickHelper != null) {
+                mSingleTapClickHelper.afterDispatch(event);
+            }
+
+            return result;
         } catch (NullPointerException | SecurityException | IllegalStateException | ArrayIndexOutOfBoundsException e) {
             // Attempt to invoke interface method 'boolean android.app.trust.ITrustManager.isDeviceLocked(int)' on a null object reference
             // Permission Denial: starting Intent
@@ -226,6 +247,8 @@ public class MotherActivity extends FragmentActivity {
     protected void onPause() {
         super.onPause();
 
+        stopSystemBarsRestore();
+
         // Stop managing the screensaver so a paused activity cannot keep the display awake.
         mScreensaverManager.suspend();
     }
@@ -267,10 +290,17 @@ public class MotherActivity extends FragmentActivity {
         if (sCachedDisplayMetrics == null) {
             // NOTE: Don't replace with getResources().getDisplayMetrics(). Shows wrong metrics here!
             DisplayMetrics displayMetrics = new DisplayMetrics();
-            getWindowManager().getDefaultDisplay().getMetrics(displayMetrics);
+            Utils.getWindowDisplayMetrics(this, displayMetrics);
             float uiScale = MainUIData.instance(context).getUIScale();
             // Take into the account screen orientation (e.g. when running on phone)
             int widthPixels = Math.max(displayMetrics.widthPixels, displayMetrics.heightPixels);
+            if (Utils.isMobileBuild(context)) {
+                // Mobile build is always in landscape. The activity could be created while the device is held in portrait
+                // (before the orientation lock is applied). Don't cache portrait sizes.
+                int heightPixels = Math.min(displayMetrics.widthPixels, displayMetrics.heightPixels);
+                displayMetrics.widthPixels = widthPixels;
+                displayMetrics.heightPixels = heightPixels;
+            }
             float widthRatio = DEFAULT_WIDTH / widthPixels;
             float density = DEFAULT_DENSITY / widthRatio * uiScale;
             displayMetrics.density = density;
@@ -298,8 +328,57 @@ public class MotherActivity extends FragmentActivity {
             // Most of the fullscreen tweaks could be performed in styles but not all.
             // E.g. Hide bottom navigation bar (couldn't be done in styles).
             Helpers.makeActivityFullscreen2(this);
+            startSystemBarsRestore();
         }
     }
+
+    @Override
+    public void onWindowFocusChanged(boolean hasFocus) {
+        super.onWindowFocusChanged(hasFocus);
+
+        // Mobile build: the system bars could be shown by the keyboard or a system dialog
+        if (hasFocus && mIsFullscreenModeEnabled && Utils.isMobileBuild(this) && getWindow() != null
+                && !SystemBarsHelper.isKeyboardVisible(getWindow().getDecorView())) {
+            Helpers.makeActivityFullscreen2(this);
+        }
+    }
+
+    /**
+     * Mobile build: the system bars could stay visible over the content (e.g. after the keyboard is closed).
+     * Hide them again while the activity is in the foreground.
+     */
+    private void startSystemBarsRestore() {
+        if (!Utils.isMobileBuild(this) || getWindow() == null) {
+            return;
+        }
+
+        View decorView = getWindow().getDecorView();
+        decorView.removeCallbacks(mSystemBarsRestore);
+        decorView.postDelayed(mSystemBarsRestore, SYSTEM_BARS_CHECK_INTERVAL_MS);
+    }
+
+    private void stopSystemBarsRestore() {
+        if (getWindow() != null) {
+            getWindow().getDecorView().removeCallbacks(mSystemBarsRestore);
+        }
+    }
+
+    private final Runnable mSystemBarsRestore = new Runnable() {
+        @Override
+        public void run() {
+            if (isFinishing() || getWindow() == null || !mIsFullscreenModeEnabled) {
+                return;
+            }
+
+            View decorView = getWindow().getDecorView();
+
+            if (hasWindowFocus() && SystemBarsHelper.isSystemBarsVisible(decorView) && !SystemBarsHelper.isKeyboardVisible(decorView)) {
+                Helpers.makeActivityFullscreen2(MotherActivity.this);
+            }
+
+            decorView.postDelayed(this, SYSTEM_BARS_CHECK_INTERVAL_MS);
+        }
+    };
 
     @Override
     public void onRequestPermissionsResult(int requestCode, @NonNull String[] permissions, @NonNull int[] grantResults) {

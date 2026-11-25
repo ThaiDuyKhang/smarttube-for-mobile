@@ -1,0 +1,32 @@
+<?xml version="1.0" encoding="utf-8"?>
+<!-- Phones and tablets build: the app must not require TV-only features -->
+<manifest xmlns:android="http://schemas.android.com/apk/res/android"
+    xmlns:tools="http://schemas.android.com/tools"
+    tools:ignore="MissingLeanbackLauncher">
+    <!-- MissingLeanbackLauncher: the launcher activity is declared in the main manifest -->
+
+    <uses-feature
+        android:name="android.software.leanback"
+        android:required="false"
+        tools:replace="android:required" />
+
+    <uses-feature
+        android:name="android.hardware.touchscreen"
+        android:required="false"
+        tools:replace="android:required" />
+
+    <!-- Not every phone or tablet has them (declared by the libraries or implied by the permissions) -->
+    <uses-feature
+        android:name="android.hardware.usb.host"
+        android:required="false"
+        tools:replace="android:required" />
+
+    <uses-feature
+        android:name="android.hardware.bluetooth"
+        android:required="false" />
+
+    <uses-feature
+        android:name="android.hardware.wifi"
+        android:required="false" />
+
+</manifest>
