@@ -17,6 +17,7 @@ import androidx.leanback.widget.VerticalGridView;
 import com.liskovsoft.smartyoutubetv2.common.app.models.data.Video;
 import com.liskovsoft.smartyoutubetv2.common.app.models.data.VideoGroup;
 import com.liskovsoft.smartyoutubetv2.common.app.presenters.BrowsePresenter;
+import com.liskovsoft.smartyoutubetv2.common.utils.Utils;
 import com.liskovsoft.smartyoutubetv2.common.app.presenters.interfaces.VideoGroupPresenter;
 import com.liskovsoft.smartyoutubetv2.common.misc.TickleManager;
 import com.liskovsoft.smartyoutubetv2.common.prefs.MainUIData;
@@ -212,6 +213,14 @@ public class MultiVideoGridFragment extends MultiGridFragment implements VideoSe
         }
     }
 
+    @Override
+    protected int getNumberOfColumns2() {
+        int maxColsNum = GridFragmentHelper.getMaxColsNum(getContext(), R.dimen.card_width, mVideoGridScale);
+
+        // Mobile build (narrow portrait screen): at least one column for the videos
+        return Utils.isMobileBuild(getContext()) ? Math.max(maxColsNum - 1, 1) : Math.max(maxColsNum, 1) - 1;
+    }
+
     private void setupAdapter() {
         // Left vertical list of channels
         VerticalGridPresenter presenter1 = new CustomVerticalGridPresenter(R.layout.lb_vertical_grid1, R.id.browse_grid1);
@@ -221,8 +230,7 @@ public class MultiVideoGridFragment extends MultiGridFragment implements VideoSe
         // Right grid of channel's content
         VerticalGridPresenter presenter2 = new CustomVerticalGridPresenter(R.layout.lb_vertical_grid2, R.id.browse_grid2);
         presenter2.enableChildRoundedCorners(getMainUIData().isUiTweakEnabled(MainUIData.UI_TWEAK_ROUNDED_CORNERS));
-        int maxColsNum = GridFragmentHelper.getMaxColsNum(getContext(), R.dimen.card_width, mVideoGridScale);
-        presenter2.setNumberOfColumns(Math.max(maxColsNum, 1) - 1);
+        presenter2.setNumberOfColumns(getNumberOfColumns2());
 
         setGridPresenter1(presenter1);
         setGridPresenter2(presenter2);

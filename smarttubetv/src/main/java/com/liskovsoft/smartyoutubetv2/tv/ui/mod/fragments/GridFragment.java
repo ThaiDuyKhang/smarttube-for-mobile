@@ -1,10 +1,12 @@
 package com.liskovsoft.smartyoutubetv2.tv.ui.mod.fragments;
 
+import android.content.res.Configuration;
 import android.os.Bundle;
 import android.util.Log;
 import android.view.LayoutInflater;
 import android.view.View;
 import android.view.ViewGroup;
+import androidx.annotation.NonNull;
 import androidx.fragment.app.Fragment;
 import androidx.leanback.app.BrowseSupportFragment;
 import androidx.leanback.transition.TransitionHelper;
@@ -35,6 +37,7 @@ public class GridFragment extends Fragment implements BrowseSupportFragment.Main
     private OnItemViewClickedListener mOnItemViewClickedListener;
     private Object mSceneAfterEntranceTransition;
     private int mSelectedPosition = -1;
+    private final GridRelayoutHelper mRelayoutHelper = new GridRelayoutHelper();
     private final BrowseSupportFragment.MainFragmentAdapter<Fragment> mMainFragmentAdapter =
             new BrowseSupportFragment.MainFragmentAdapter<Fragment>(this) {
                 @Override
@@ -174,6 +177,7 @@ public class GridFragment extends Fragment implements BrowseSupportFragment.Main
         mGridViewHolder = mGridPresenter.onCreateViewHolder(gridDock);
         gridDock.addView(mGridViewHolder.view);
         mGridViewHolder.getGridView().setOnChildLaidOutListener(mChildLaidOutListener);
+        mRelayoutHelper.init(view);
 
         mSceneAfterEntranceTransition = TransitionHelper.createScene(gridDock, new Runnable() {
             @Override
@@ -187,6 +191,31 @@ public class GridFragment extends Fragment implements BrowseSupportFragment.Main
         }
 
         updateAdapter();
+    }
+
+    @Override
+    public void onConfigurationChanged(@NonNull Configuration newConfig) {
+        super.onConfigurationChanged(newConfig);
+
+        View view = getView();
+
+        if (mRelayoutHelper.isOrientationChanged(view, newConfig)) {
+            // Run after the activity has applied the new display metrics
+            view.post(() -> {
+                if (mGridViewHolder != null) {
+                    GridRelayoutHelper.relayout(mGridPresenter, mGridViewHolder, mAdapter, getNumberOfColumns());
+                }
+            });
+        }
+    }
+
+    /**
+     * Mobile build: number of columns for the current screen width (after the screen rotation)
+     *
+     * @return number of columns or -1 to keep the current one
+     */
+    protected int getNumberOfColumns() {
+        return -1;
     }
 
     @Override

@@ -6,6 +6,7 @@ import androidx.annotation.NonNull;
 import androidx.annotation.Nullable;
 import androidx.leanback.app.GuidedStepSupportFragment;
 import androidx.leanback.widget.GuidanceStylist;
+import com.liskovsoft.smartyoutubetv2.tv.ui.common.GuidanceFitHelper;
 import androidx.leanback.widget.GuidedAction;
 import com.liskovsoft.smartyoutubetv2.common.app.presenters.AddDevicePresenter;
 import com.liskovsoft.smartyoutubetv2.common.app.views.AddDeviceView;
@@ -28,6 +29,8 @@ public class AddDeviceFragment extends GuidedStepSupportFragment implements AddD
     @Override
     public void onActivityCreated(@Nullable Bundle savedInstanceState) {
         super.onActivityCreated(savedInstanceState);
+
+        GuidanceFitHelper.install(getGuidanceStylist());
 
         mAddDevicePresenter.onViewInitialized();
     }

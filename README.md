@@ -13,15 +13,24 @@ chỉ nhằm để app dùng tốt bằng **màn hình cảm ứng** trên đi�
 | --- | --- | --- | --- |
 | ![](docs/screenshots/player_controls.jpg) | ![](docs/screenshots/context_menu.jpg) | ![](docs/screenshots/settings.jpg) | ![](docs/screenshots/search_keyboard.jpg) |
 
+Chế độ dọc:
+
+| Kênh | Trình phát | Cài đặt |
+| --- | --- | --- |
+| ![](docs/screenshots/portrait_channel.jpg) | ![](docs/screenshots/portrait_player.jpg) | ![](docs/screenshots/portrait_settings.jpg) |
+
 ## Khác gì so với bản TV
 
 | | Bản TV (gốc) | SmartTube Mobile |
 | --- | --- | --- |
 | Thiết bị | Android TV, TV box, Fire TV | Điện thoại, máy tính bảng Android 5.0 trở lên |
-| Hướng màn hình | Theo TV | Luôn nằm ngang, xoay được cả hai chiều theo cảm biến |
+| Hướng màn hình | Ngang (TV) | **Dọc và ngang**, xoay tự do theo cảm biến (tôn trọng khóa xoay của hệ thống) |
 | Chạm vào video, nút, mục cài đặt | Chạm lần 1 chỉ chọn, lần 2 mới mở | **Chạm 1 lần là mở** |
 | Thanh hệ thống sau khi gõ phím | Có thể nằm đè lên nội dung | Tự ẩn lại khi bàn phím đóng |
 | Sửa từ khóa khi đang xem kết quả tìm kiếm | Cần phím Lên của điều khiển | Chạm vào vùng trống phía trên kết quả |
+| Lưới (Cài đặt, kênh, playlist) | Số cột cố định theo màn hình TV | Số cột tự tính theo bề ngang, tự cập nhật khi xoay |
+| Trình phát ở chế độ dọc | — | Các nút co lại vừa màn hình, thông tin thời gian xếp xuống dưới |
+| Mã đăng nhập ở chế độ dọc | — | Hiển thị đầy đủ (ảnh QR thu nhỏ, chữ tự vừa) |
 | Mã ứng dụng | `org.smarttube.beta` / `org.smarttube.stable` | `app.smarttube.mobile` (cài song song được với bản TV) |
 | Tự cập nhật trong app | Có (tải bản TV) | Tắt, tải bản mới ở mục Releases |
 
@@ -99,7 +108,8 @@ Nếu chưa có secret, workflow sẽ build bản debug và đính kèm APK vào
 ## Giới hạn
 
 - Chỉ chạy trên **Android**. iPhone và iPad không cài được APK.
-- Giao diện là giao diện TV, nên luôn hiển thị ở chế độ ngang.
+- Khi menu bên trái đang mở, phần nội dung xem trước bị đẩy sang phải (giống bản TV). Chạm lại vào mục menu
+  để vào nội dung toàn màn hình.
 - Các mục chỉ dành cho TV (Auto Frame Rate, kênh trên màn hình chính Android TV) vẫn còn trong cài đặt nhưng không có
   tác dụng trên điện thoại.
 
@@ -108,7 +118,10 @@ Nếu chưa có secret, workflow sẽ build bản debug và đính kèm APK vào
 - `smarttubetv/build.gradle`, `common/build.gradle`, `leanbackassistant/build.gradle`: flavor `stmobile`
 - `smarttubetv/src/stmobile/`: manifest (không bắt buộc leanback, touchscreen, usb, bluetooth), tên app, icon
 - `common/.../misc/SingleTapClickHelper.java`: chạm 1 lần để mở
-- `common/.../misc/SystemBarsHelper.java`, `MotherActivity.java`: khóa hướng ngang, giữ chế độ toàn màn hình
+- `common/.../misc/SystemBarsHelper.java`, `MotherActivity.java`: xoay dọc/ngang, giữ chế độ toàn màn hình
+- `smarttubetv/.../mod/fragments/GridRelayoutHelper.java`, `GridFragment.java`, `MultiGridFragment.java`: tính lại lưới khi xoay
+- `smarttubetv/.../playerglue/tweaks/ControlBar.java`, `ControlsInfoLayout.java`: bảng điều khiển trình phát ở chế độ dọc
+- `smarttubetv/.../common/GuidanceFitHelper.java`: màn hình đăng nhập ở chế độ dọc
 - `smarttubetv/.../search/SearchSupportFragment.java`: chạm để hiện lại ô tìm kiếm
 - `common/.../utils/Utils.java`: `isMobileBuild()`, kích thước màn hình thật khi ẩn thanh hệ thống
 

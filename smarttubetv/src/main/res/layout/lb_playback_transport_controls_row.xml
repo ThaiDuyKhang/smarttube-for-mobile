@@ -96,7 +96,8 @@
         />
         -->
 
-        <RelativeLayout android:layout_width="match_parent"
+        <!-- MOD: mobile portrait: the info block goes below the buttons if they don't fit -->
+        <com.liskovsoft.smartyoutubetv2.tv.ui.mod.leanback.playerglue.tweaks.ControlsInfoLayout android:layout_width="match_parent"
                         android:layout_height="wrap_content"
                         android:layoutDirection="ltr"
                         android:layout_marginLeft="@dimen/lb_playback_transport_controlbar_margin_start"
@@ -131,7 +132,7 @@
                     android:layout_below="@+id/quality_info"
                     style="?attr/playbackControlsTimeStyle" />
             </RelativeLayout>
-        </RelativeLayout>
+        </com.liskovsoft.smartyoutubetv2.tv.ui.mod.leanback.playerglue.tweaks.ControlsInfoLayout>
 
         <com.liskovsoft.smartyoutubetv2.tv.ui.mod.leanback.misc.SeekBar
             android:id="@+id/playback_progress"
@@ -140,7 +141,8 @@
             android:focusable="true"
             android:focusableInTouchMode="true" />
 
-        <RelativeLayout android:layout_width="match_parent"
+        <!-- MOD: mobile portrait: the info block goes below the buttons if they don't fit -->
+        <com.liskovsoft.smartyoutubetv2.tv.ui.mod.leanback.playerglue.tweaks.ControlsInfoLayout android:layout_width="match_parent"
                         android:layout_height="wrap_content"
                         android:layoutDirection="ltr"
                         android:layout_marginLeft="@dimen/lb_playback_transport_controlbar_margin_start"
@@ -200,7 +202,7 @@
                         style="?attr/playbackControlsTimeStyle" />
                 </RelativeLayout>
             </RelativeLayout>
-        </RelativeLayout>
+        </com.liskovsoft.smartyoutubetv2.tv.ui.mod.leanback.playerglue.tweaks.ControlsInfoLayout>
 
 
     </com.liskovsoft.smartyoutubetv2.tv.ui.mod.leanback.playerglue.tweaks.PlaybackTransportRowView>

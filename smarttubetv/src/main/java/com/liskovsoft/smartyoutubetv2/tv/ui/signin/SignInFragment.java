@@ -8,6 +8,7 @@ import androidx.annotation.Nullable;
 import androidx.core.content.ContextCompat;
 import androidx.leanback.app.GuidedStepSupportFragment;
 import androidx.leanback.widget.GuidanceStylist;
+import com.liskovsoft.smartyoutubetv2.tv.ui.common.GuidanceFitHelper;
 import androidx.leanback.widget.GuidedAction;
 import com.bumptech.glide.Glide;
 import com.bumptech.glide.load.DataSource;
@@ -41,6 +42,8 @@ public class SignInFragment extends GuidedStepSupportFragment implements SignInV
     @Override
     public void onActivityCreated(@Nullable Bundle savedInstanceState) {
         super.onActivityCreated(savedInstanceState);
+
+        GuidanceFitHelper.install(getGuidanceStylist());
 
         mSignInPresenter.onViewInitialized();
     }

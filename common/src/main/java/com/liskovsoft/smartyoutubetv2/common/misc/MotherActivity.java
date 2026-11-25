@@ -72,9 +72,9 @@ public class MotherActivity extends FragmentActivity {
         //if (VERSION.SDK_INT != 26) {
         //    setRequestedOrientation(ActivityInfo.SCREEN_ORIENTATION_LANDSCAPE);
         //}
-        // Mobile build: the UI is designed for a landscape (TV) screen. Allow both landscape sides.
+        // Mobile build: follow the device rotation (portrait and landscape)
         if (Utils.isMobileBuild(this)) {
-            Utils.lockSensorLandscape(this);
+            Utils.applyMobileOrientation(this);
         }
         super.onCreate(savedInstanceState);
 
@@ -285,6 +285,20 @@ public class MotherActivity extends FragmentActivity {
     }
 
     private DisplayMetrics getDisplayMetrics(Context context) {
+        if (Utils.isMobileBuild(context)) {
+            // Mobile build: the screen could be rotated. Width and height follow the current orientation.
+            // The density depends on the longest side only, so the UI elements have the same size in both orientations.
+            DisplayMetrics displayMetrics = new DisplayMetrics();
+            Utils.getWindowDisplayMetrics(this, displayMetrics);
+            float uiScale = MainUIData.instance(context).getUIScale();
+            int longSidePixels = Math.max(displayMetrics.widthPixels, displayMetrics.heightPixels);
+            float density = DEFAULT_DENSITY / (DEFAULT_WIDTH / longSidePixels) * uiScale;
+            displayMetrics.density = density;
+            displayMetrics.scaledDensity = density;
+            sCachedDisplayMetrics = displayMetrics;
+            return displayMetrics;
+        }
+
         // BUG: adapt to resolution change (e.g. on AFR)
         // Don't disable caching or you will experience weird sizes on cards in video suggestions (e.g. after exit from PIP)!
         if (sCachedDisplayMetrics == null) {
@@ -294,13 +308,6 @@ public class MotherActivity extends FragmentActivity {
             float uiScale = MainUIData.instance(context).getUIScale();
             // Take into the account screen orientation (e.g. when running on phone)
             int widthPixels = Math.max(displayMetrics.widthPixels, displayMetrics.heightPixels);
-            if (Utils.isMobileBuild(context)) {
-                // Mobile build is always in landscape. The activity could be created while the device is held in portrait
-                // (before the orientation lock is applied). Don't cache portrait sizes.
-                int heightPixels = Math.min(displayMetrics.widthPixels, displayMetrics.heightPixels);
-                displayMetrics.widthPixels = widthPixels;
-                displayMetrics.heightPixels = heightPixels;
-            }
             float widthRatio = DEFAULT_WIDTH / widthPixels;
             float density = DEFAULT_DENSITY / widthRatio * uiScale;
             displayMetrics.density = density;

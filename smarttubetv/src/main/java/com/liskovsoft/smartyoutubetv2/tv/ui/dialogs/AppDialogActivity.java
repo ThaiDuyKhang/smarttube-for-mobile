@@ -51,7 +51,7 @@ public class AppDialogActivity extends MotherActivity {
         // So, to fix the problem, set orientation here instead of manifest
         // More info: https://stackoverflow.com/questions/48072438/java-lang-illegalstateexception-only-fullscreen-opaque-activities-can-request-o
         if (Utils.isMobileBuild(this)) {
-            // Already applied inside MotherActivity (both landscape sides are allowed)
+            // Already applied inside MotherActivity (follows the device rotation)
             return;
         }
 

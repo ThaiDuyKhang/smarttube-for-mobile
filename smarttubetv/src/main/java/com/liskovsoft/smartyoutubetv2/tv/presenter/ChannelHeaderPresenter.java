@@ -29,6 +29,7 @@ import com.liskovsoft.sharedutils.helpers.MessageHelpers;
 import com.liskovsoft.sharedutils.helpers.PermissionHelpers;
 import com.liskovsoft.smartyoutubetv2.common.misc.MotherActivity;
 import com.liskovsoft.smartyoutubetv2.common.prefs.SearchData;
+import com.liskovsoft.smartyoutubetv2.common.utils.Utils;
 import com.liskovsoft.smartyoutubetv2.tv.BuildConfig;
 import com.liskovsoft.smartyoutubetv2.tv.R;
 import com.liskovsoft.smartyoutubetv2.tv.util.ViewUtil;
@@ -114,7 +115,9 @@ public class ChannelHeaderPresenter extends RowPresenter {
         searchTextEditor.setOnFocusChangeListener((v, focused) -> {
             Log.d(TAG, "on search field focused");
 
-            if (mIsKeyboardAutoShowEnabled && focused) {
+            // Mobile build: the field gets the focus automatically in touch mode (e.g. when the channel is opened).
+            // Don't cover the channel with the keyboard. The keyboard is shown when the user taps the field.
+            if (mIsKeyboardAutoShowEnabled && focused && !Utils.isMobileBuild(v.getContext())) {
                 Helpers.showKeyboardAlt(v.getContext(), v);
             }
         });

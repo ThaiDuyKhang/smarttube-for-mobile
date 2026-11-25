@@ -14,11 +14,14 @@
 package com.liskovsoft.smartyoutubetv2.tv.ui.mod.leanback.playerglue.tweaks;
 
 import android.content.Context;
+import android.content.res.Configuration;
 import android.graphics.Rect;
 import android.util.AttributeSet;
 import android.view.View;
 import android.view.ViewGroup;
 import android.widget.LinearLayout;
+
+import com.liskovsoft.smartyoutubetv2.common.utils.Utils;
 
 import java.util.ArrayList;
 
@@ -38,15 +41,19 @@ class ControlBar extends LinearLayout {
     private boolean mIsSharedFocusEnabled = true;
     private boolean mDefaultFocusToMiddle = true;
     private boolean mFocusRecovery = true;
+    // Mobile build: fit the buttons into the screen width (portrait)
+    private final boolean mIsFitWidthEnabled;
 
     public ControlBar(Context context, AttributeSet attrs) {
         super(context, attrs);
         resetFocus(); // MOD: reset global focus index
+        mIsFitWidthEnabled = Utils.isMobileBuild(context);
     }
 
     public ControlBar(Context context, AttributeSet attrs, int defStyle) {
         super(context, attrs, defStyle);
         resetFocus(); // MOD: reset global focus index
+        mIsFitWidthEnabled = Utils.isMobileBuild(context);
     }
 
     void setDefaultFocusToMiddle(boolean defaultFocusToMiddle) {
@@ -132,12 +139,15 @@ class ControlBar extends LinearLayout {
             return;
         }
 
+        // Mobile build in portrait: fit the buttons into the narrow screen. Landscape keeps the original (TV) look.
+        int marginFromCenter = mIsFitWidthEnabled && isPortrait() ? getFitMarginFromCenter(widthMeasureSpec) : mChildMarginFromCenter;
+
         int totalExtraMargin = 0;
         for (int i = 0; i < getChildCount() - 1; i++) {
             View first = getChildAt(i);
             View second = getChildAt(i+1);
             int measuredWidth = first.getMeasuredWidth() + second.getMeasuredWidth();
-            int marginStart = mChildMarginFromCenter - measuredWidth / 2;
+            int marginStart = marginFromCenter - measuredWidth / 2;
             LayoutParams lp = (LayoutParams) second.getLayoutParams();
             int extraMargin = marginStart - lp.getMarginStart();
             lp.setMarginStart(marginStart);
@@ -145,6 +155,39 @@ class ControlBar extends LinearLayout {
             totalExtraMargin += extraMargin;
         }
         setMeasuredDimension(getMeasuredWidth() + totalExtraMargin, getMeasuredHeight());
+    }
+
+    /**
+     * Mobile build (narrow portrait screen): reduce the distance between the buttons to fit them into the available width.<br/>
+     * The buttons never overlap. The distance is never bigger than the original one (TV/landscape look is unchanged).
+     */
+    private int getFitMarginFromCenter(int widthMeasureSpec) {
+        int count = getChildCount();
+
+        if (count < 2 || MeasureSpec.getMode(widthMeasureSpec) == MeasureSpec.UNSPECIFIED) {
+            return mChildMarginFromCenter;
+        }
+
+        int availableWidth = MeasureSpec.getSize(widthMeasureSpec) - getPaddingLeft() - getPaddingRight();
+        int firstHalf = getChildAt(0).getMeasuredWidth() / 2;
+        int lastHalf = getChildAt(count - 1).getMeasuredWidth() / 2;
+        int fitMargin = (availableWidth - firstHalf - lastHalf) / (count - 1);
+
+        if (fitMargin >= mChildMarginFromCenter) {
+            return mChildMarginFromCenter;
+        }
+
+        // Don't let the buttons overlap
+        int minMargin = 0;
+        for (int i = 0; i < count - 1; i++) {
+            minMargin = Math.max(minMargin, (getChildAt(i).getMeasuredWidth() + getChildAt(i + 1).getMeasuredWidth()) / 2);
+        }
+
+        return Math.max(fitMargin, minMargin);
+    }
+
+    private boolean isPortrait() {
+        return getResources().getConfiguration().orientation == Configuration.ORIENTATION_PORTRAIT;
     }
 
     private void setFocusIndex(int index) {

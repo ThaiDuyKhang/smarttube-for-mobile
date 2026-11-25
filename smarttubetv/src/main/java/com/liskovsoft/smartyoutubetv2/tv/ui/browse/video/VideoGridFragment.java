@@ -88,11 +88,14 @@ public class VideoGridFragment extends GridFragment implements VideoSection {
         }
     }
 
+    @Override
+    protected int getNumberOfColumns() {
+        return GridFragmentHelper.getMaxColsNum(getContext(), isShorts() ? R.dimen.shorts_card_width : R.dimen.card_width, mVideoGridScale);
+    }
+
     private void setupAdapter() {
         VerticalGridPresenter presenter = new CustomVerticalGridPresenter();
-        presenter.setNumberOfColumns(
-                GridFragmentHelper.getMaxColsNum(getContext(), isShorts() ? R.dimen.shorts_card_width : R.dimen.card_width, mVideoGridScale)
-        );
+        presenter.setNumberOfColumns(getNumberOfColumns());
         presenter.enableChildRoundedCorners(getMainUIData().isUiTweakEnabled(MainUIData.UI_TWEAK_ROUNDED_CORNERS));
         setGridPresenter(presenter);
 

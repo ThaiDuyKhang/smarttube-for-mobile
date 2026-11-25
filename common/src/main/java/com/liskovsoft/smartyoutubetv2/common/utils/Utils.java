@@ -1394,18 +1394,18 @@ public class Utils {
     }
 
     /**
-     * The UI is designed for a landscape (TV) screen. Allow both landscape sides on phones and tablets.
+     * Phones and tablets: follow the device rotation (respects the system rotation lock)
      */
-    public static void lockSensorLandscape(Activity activity) {
+    public static void applyMobileOrientation(Activity activity) {
         if (activity == null) {
             return;
         }
 
         try {
-            activity.setRequestedOrientation(ActivityInfo.SCREEN_ORIENTATION_SENSOR_LANDSCAPE);
+            activity.setRequestedOrientation(ActivityInfo.SCREEN_ORIENTATION_USER);
         } catch (IllegalStateException e) {
             // Android 8.0 (api 26): Only fullscreen opaque activities can request orientation
-            Log.e(TAG, "lockSensorLandscape error: %s", e.getMessage());
+            Log.e(TAG, "applyMobileOrientation error: %s", e.getMessage());
         }
     }
 }

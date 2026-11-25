@@ -1,5 +1,6 @@
 package com.liskovsoft.smartyoutubetv2.tv.ui.mod.fragments;
 
+import android.content.res.Configuration;
 import android.os.Bundle;
 import android.util.Log;
 import android.view.LayoutInflater;
@@ -41,6 +42,7 @@ public class MultiGridFragment extends Fragment implements BrowseSupportFragment
     private VerticalGridPresenter mGridPresenter2;
     private VerticalGridPresenter.ViewHolder mGridViewHolder1;
     private VerticalGridPresenter.ViewHolder mGridViewHolder2;
+    private final GridRelayoutHelper mRelayoutHelper = new GridRelayoutHelper();
     private OnItemViewSelectedListener mOnItemViewSelectedListener1;
     private OnItemViewSelectedListener mOnItemViewSelectedListener2;
     private OnItemViewClickedListener mOnItemViewClickedListener1;
@@ -328,6 +330,7 @@ public class MultiGridFragment extends Fragment implements BrowseSupportFragment
         mGridViewHolder2 = mGridPresenter2.onCreateViewHolder(gridDock);
         mGridViewHolder2.getGridView().setOnChildLaidOutListener(mChildLaidOutListener2);
         //gridDock.addView(mGridViewHolder2.view);
+        mRelayoutHelper.init(view);
 
         mSceneAfterEntranceTransition = TransitionHelper.createScene(gridDock, new Runnable() {
             @Override
@@ -342,6 +345,32 @@ public class MultiGridFragment extends Fragment implements BrowseSupportFragment
 
         updateAdapter1();
         updateAdapter2();
+    }
+
+    @Override
+    public void onConfigurationChanged(@NonNull Configuration newConfig) {
+        super.onConfigurationChanged(newConfig);
+
+        View view = getView();
+
+        if (mRelayoutHelper.isOrientationChanged(view, newConfig)) {
+            // Run after the activity has applied the new display metrics
+            view.post(() -> {
+                if (mGridViewHolder1 != null && mGridViewHolder2 != null) {
+                    GridRelayoutHelper.relayout(mGridPresenter1, mGridViewHolder1, mAdapter1, -1);
+                    GridRelayoutHelper.relayout(mGridPresenter2, mGridViewHolder2, mAdapter2, getNumberOfColumns2());
+                }
+            });
+        }
+    }
+
+    /**
+     * Mobile build: number of columns of the second (right) grid for the current screen width
+     *
+     * @return number of columns or -1 to keep the current one
+     */
+    protected int getNumberOfColumns2() {
+        return -1;
     }
 
     @Override

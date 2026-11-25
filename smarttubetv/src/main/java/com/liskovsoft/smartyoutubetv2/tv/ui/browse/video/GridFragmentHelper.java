@@ -12,6 +12,7 @@ import com.liskovsoft.sharedutils.helpers.Helpers;
 import com.liskovsoft.smartyoutubetv2.common.app.models.data.VideoGroup;
 import com.liskovsoft.smartyoutubetv2.common.app.views.ViewManager;
 import com.liskovsoft.smartyoutubetv2.common.prefs.MainUIData;
+import com.liskovsoft.smartyoutubetv2.common.utils.Utils;
 import com.liskovsoft.smartyoutubetv2.tv.R;
 import com.liskovsoft.smartyoutubetv2.tv.adapter.VideoGroupObjectAdapter;
 
@@ -24,7 +25,10 @@ public class GridFragmentHelper {
     private static final Runnable sInvalidate = GridFragmentHelper::invalidate;
     private static final int MIN_ADAPTER_SIZE = 6;
 
-    private static void invalidate() {
+    /**
+     * Drop the cached sizes (e.g. after the screen rotation)
+     */
+    public static void invalidate() {
         sCardDimensPx.clear();
         sMaxColsNum.clear();
     }
@@ -64,6 +68,7 @@ public class GridFragmentHelper {
 
         Resources res = context.getResources();
         int displayWidthPx;
+        boolean isMobileBuild = Utils.isMobileBuild(context);
 
         // Take into the account screen orientation (e.g. when running on phone)
         if (VERSION.SDK_INT >= 30 && Helpers.isCutoutMode(context)) {
@@ -71,11 +76,13 @@ public class GridFragmentHelper {
             Rect bounds = context.getSystemService(WindowManager.class)
                     .getCurrentWindowMetrics().getBounds();
 
-            displayWidthPx = Math.max(bounds.width(), bounds.height());
+            // Mobile build: the screen could be in portrait
+            displayWidthPx = isMobileBuild ? bounds.width() : Math.max(bounds.width(), bounds.height());
         } else {
             // Use regular display metrics
             DisplayMetrics displayMetrics = res.getDisplayMetrics();
-            displayWidthPx = Math.max(displayMetrics.widthPixels, displayMetrics.heightPixels);
+            // Mobile build: the screen could be in portrait
+            displayWidthPx = isMobileBuild ? displayMetrics.widthPixels : Math.max(displayMetrics.widthPixels, displayMetrics.heightPixels);
         }
 
         float cardWidthPx = res.getDimensionPixelSize(cardWidthResId) * cardScale;
