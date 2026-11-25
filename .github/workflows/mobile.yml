@@ -72,9 +72,33 @@ jobs:
           path: ${{ env.APK_DIR }}/*.apk
           if-no-files-found: error
 
+      # NOTE: upload the files one by one. Parallel uploads of the big APKs fail ("Error creating policy").
       - name: Publish release
         if: ${{ startsWith(github.ref, 'refs/tags/v') && env.HAS_SIGNING_KEY == 'true' }}
-        uses: softprops/action-gh-release@v2
-        with:
-          files: ${{ env.APK_DIR }}/*.apk
-          generate_release_notes: true
+        env:
+          GH_TOKEN: ${{ github.token }}
+          TAG: ${{ github.ref_name }}
+        run: |
+          # Use the release created on the website, or create a new one
+          if ! gh release view "$TAG" > /dev/null 2>&1; then
+            gh release create "$TAG" --verify-tag --title "SmartTube Mobile $TAG" --generate-notes
+          fi
+
+          for apk in "$APK_DIR"/*.apk; do
+            uploaded=false
+            for attempt in 1 2 3; do
+              if gh release upload "$TAG" "$apk" --clobber; then
+                uploaded=true
+                break
+              fi
+              echo "Upload of $apk failed (attempt $attempt). Retrying..."
+              sleep 15
+            done
+            if [ "$uploaded" != "true" ]; then
+              echo "::error::Can't upload $apk"
+              exit 1
+            fi
+          done
+
+          (cd "$APK_DIR" && sha256sum *.apk > SHA256SUMS.txt)
+          gh release upload "$TAG" "$APK_DIR/SHA256SUMS.txt" --clobber
