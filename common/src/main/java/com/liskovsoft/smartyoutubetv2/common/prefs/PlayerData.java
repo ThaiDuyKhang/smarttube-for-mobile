@@ -53,6 +53,7 @@ public class PlayerData extends DataChangeBase implements PlayerConstants, Profi
     private FormatItem mAudioFormat;
     private FormatItem mSubtitleFormat;
     private int mVideoBufferType;
+    private boolean mIsMobileBuild;
     private final List<SubtitleStyle> mSubtitleStyles = new ArrayList<>();
     private final Map<String, FormatItem> mDefaultVideoFormats = new HashMap<>();
     private int mSubtitleStyleIndex;
@@ -131,9 +132,38 @@ public class PlayerData extends DataChangeBase implements PlayerConstants, Profi
     private PlayerData(Context context) {
         mPrefs = AppPrefs.instance(context);
         mPrefs.addListener(this);
+        mIsMobileBuild = Utils.isMobileBuild(context);
         initSubtitleStyles();
         initDefaultFormats();
         restoreState();
+        migrateMobileFormats(context);
+    }
+
+    /**
+     * Phones: the first versions saved the TV default (4K, 5.1 sound). Too heavy for a phone and a mobile network.
+     * Once: back to the phone defaults (unless the user picked something else).
+     */
+    private void migrateMobileFormats(Context context) {
+        if (!mIsMobileBuild) {
+            return;
+        }
+
+        android.content.SharedPreferences prefs = context.getSharedPreferences("mobile_ui", Context.MODE_PRIVATE);
+
+        if (prefs.getBoolean("formats_migrated", false)) {
+            return;
+        }
+
+        if (mVideoFormat != null && mVideoFormat.getHeight() > 1080) {
+            mVideoFormat = getDefaultVideoFormat();
+        }
+
+        if (FormatItem.AUDIO_51_AC3.equals(mAudioFormat)) {
+            mAudioFormat = getDefaultAudioFormat();
+        }
+
+        prefs.edit().putBoolean("formats_migrated", true).apply();
+        persistState();
     }
 
     public static PlayerData instance(Context context) {
@@ -714,10 +744,18 @@ public class PlayerData extends DataChangeBase implements PlayerConstants, Profi
         // Android 4 (probably some others) doesn't support opus (ac3 will be reverted to opus)
         // Note, 5.1 mp4a doesn't work in 5.1 mode
         // Use opus (ac3 fallback) on modern devices. vp9 and opus should be supported at the same time?
+        if (mIsMobileBuild) {
+            return FormatItem.AUDIO_HQ_MP4A; // phones: stereo
+        }
         return DeviceHelpers.isVP9ResolutionSupported(2160) ? FormatItem.AUDIO_51_AC3 : FormatItem.AUDIO_HQ_MP4A;
     }
 
     public FormatItem getDefaultVideoFormat() {
+        if (mIsMobileBuild) {
+            // Phones: up to 1080p (sharp on a phone screen, quick to start, smooth on mobile networks)
+            return DeviceHelpers.isVP9ResolutionSupported(1080) ? FormatItem.VIDEO_FHD_VP9_60 : FormatItem.VIDEO_HD_AVC_30;
+        }
+
         FormatItem formatItem = mDefaultVideoFormats.get(Build.MODEL);
 
         if (formatItem == null) {

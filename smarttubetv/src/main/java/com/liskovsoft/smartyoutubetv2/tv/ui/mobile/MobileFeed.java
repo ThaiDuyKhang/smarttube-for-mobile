@@ -81,6 +81,12 @@ public class MobileFeed {
             }
         });
         list.setAdapter(adapter);
+        list.setHasFixedSize(true);
+        list.setItemViewCacheSize(8); // scrolling back up doesn't rebind the last cards
+        if (list.getItemAnimator() instanceof androidx.recyclerview.widget.SimpleItemAnimator) {
+            // Updated cards don't blink
+            ((androidx.recyclerview.widget.SimpleItemAnimator) list.getItemAnimator()).setSupportsChangeAnimations(false);
+        }
         list.addOnScrollListener(new RecyclerView.OnScrollListener() {
             @Override
             public void onScrolled(@NonNull RecyclerView recyclerView, int dx, int dy) {

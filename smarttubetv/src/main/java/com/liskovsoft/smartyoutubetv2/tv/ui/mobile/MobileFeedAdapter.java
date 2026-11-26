@@ -57,6 +57,9 @@ public class MobileFeedAdapter extends RecyclerView.Adapter<RecyclerView.ViewHol
         final String title;
         final SettingsItem setting;
         final long id;
+        // Snapshot to tell if the row must be redrawn
+        final float watched;
+        final int count;
 
         private Item(int type, Video video, List<Video> videos, String title, SettingsItem setting, long id) {
             this.type = type;
@@ -65,6 +68,8 @@ public class MobileFeedAdapter extends RecyclerView.Adapter<RecyclerView.ViewHol
             this.title = title;
             this.setting = setting;
             this.id = id;
+            this.watched = video != null ? video.percentWatched : 0;
+            this.count = videos != null ? videos.size() : 0;
         }
 
         public static Item header(String title, Object owner) {
@@ -121,6 +126,7 @@ public class MobileFeedAdapter extends RecyclerView.Adapter<RecyclerView.ViewHol
 
     private static final SettingsItem HISTORY_MARK = new SettingsItem(null, null);
     private final Callback mCallback;
+    private final RecyclerView.RecycledViewPool mShortsPool = new RecyclerView.RecycledViewPool();
     private View mCustomView;
     private final List<Item> mItems = new ArrayList<>();
 
@@ -129,10 +135,49 @@ public class MobileFeedAdapter extends RecyclerView.Adapter<RecyclerView.ViewHol
         setHasStableIds(true);
     }
 
+    /**
+     * Only the changed rows are updated (a new page doesn't redraw the whole list or reload the images)
+     */
     public void setItems(List<Item> items) {
+        if (mItems.isEmpty() || items.isEmpty() || mItems.size() + items.size() > 4000) {
+            mItems.clear();
+            mItems.addAll(items);
+            notifyDataSetChanged();
+            return;
+        }
+
+        List<Item> oldItems = new ArrayList<>(mItems);
+        androidx.recyclerview.widget.DiffUtil.DiffResult diff = androidx.recyclerview.widget.DiffUtil.calculateDiff(
+                new androidx.recyclerview.widget.DiffUtil.Callback() {
+                    @Override
+                    public int getOldListSize() {
+                        return oldItems.size();
+                    }
+
+                    @Override
+                    public int getNewListSize() {
+                        return items.size();
+                    }
+
+                    @Override
+                    public boolean areItemsTheSame(int oldPosition, int newPosition) {
+                        return oldItems.get(oldPosition).id == items.get(newPosition).id;
+                    }
+
+                    @Override
+                    public boolean areContentsTheSame(int oldPosition, int newPosition) {
+                        Item oldItem = oldItems.get(oldPosition);
+                        Item newItem = items.get(newPosition);
+                        // Same video: redraw only when the watched progress changed. Shorts row: when it got more videos.
+                        return oldItem.type != TYPE_YOU_HEADER && oldItem.type != TYPE_VIEW
+                                && oldItem.watched == newItem.watched && oldItem.count == newItem.count
+                                && TextUtils.equals(oldItem.title, newItem.title);
+                    }
+                }, false);
+
         mItems.clear();
         mItems.addAll(items);
-        notifyDataSetChanged();
+        diff.dispatchUpdatesTo(this);
     }
 
     public void setCustomView(View view) {
@@ -354,8 +399,16 @@ public class MobileFeedAdapter extends RecyclerView.Adapter<RecyclerView.ViewHol
             return;
         }
 
-        Glide.with(view).load(url).into(view);
+        Glide.with(view)
+                .load(url)
+                .apply(THUMB_OPTIONS)
+                .into(view);
     }
+
+    // Thumbnails: half the memory (no transparency needed), quick fade, kept in the disk cache
+    private static final RequestOptions THUMB_OPTIONS = new RequestOptions()
+            .format(com.bumptech.glide.load.DecodeFormat.PREFER_RGB_565)
+            .diskCacheStrategy(com.bumptech.glide.load.engine.DiskCacheStrategy.AUTOMATIC);
 
     static void setTextOrHide(TextView view, CharSequence text) {
         if (TextUtils.isEmpty(text)) {
@@ -381,7 +434,11 @@ public class MobileFeedAdapter extends RecyclerView.Adapter<RecyclerView.ViewHol
         ShortsRowHolder(@NonNull View itemView) {
             super(itemView);
             RecyclerView row = (RecyclerView) itemView;
-            row.setLayoutManager(new LinearLayoutManager(itemView.getContext(), LinearLayoutManager.HORIZONTAL, false));
+            LinearLayoutManager layoutManager = new LinearLayoutManager(itemView.getContext(), LinearLayoutManager.HORIZONTAL, false);
+            layoutManager.setInitialPrefetchItemCount(3); // the first cards are ready when the row scrolls in
+            row.setLayoutManager(layoutManager);
+            row.setRecycledViewPool(mShortsPool); // the rows share their cards
+            row.setHasFixedSize(true);
             row.setAdapter(mAdapter);
         }
 

@@ -248,6 +248,12 @@ public class MobileBrowseActivity extends MobileActivity implements BrowseView, 
         });
         mAdapter = new MobileFeedAdapter(this);
         mFeed.setAdapter(mAdapter);
+        mFeed.setHasFixedSize(true);
+        mFeed.setItemViewCacheSize(8); // scrolling back up doesn't rebind the last cards
+        if (mFeed.getItemAnimator() instanceof androidx.recyclerview.widget.SimpleItemAnimator) {
+            // Updated cards don't blink
+            ((androidx.recyclerview.widget.SimpleItemAnimator) mFeed.getItemAnimator()).setSupportsChangeAnimations(false);
+        }
         mFeed.addOnScrollListener(new RecyclerView.OnScrollListener() {
             @Override
             public void onScrollStateChanged(@NonNull RecyclerView recyclerView, int newState) {
