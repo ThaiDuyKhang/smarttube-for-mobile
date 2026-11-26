@@ -110,6 +110,7 @@ public class MobilePlaybackActivity extends MobileActivity implements PlaybackVi
     private ImageButton mFullscreenButton;
     private View mFullscreenActionsScroll;
     private LinearLayout mFullscreenActions;
+    private View mControlsBottom;
     private MobileTimeBar mTimeBar;
     private TextView mSeekHint;
     private View mShortsOverlay;
@@ -538,6 +539,7 @@ public class MobilePlaybackActivity extends MobileActivity implements PlaybackVi
         mFullscreenButton = findViewById(R.id.mobile_fullscreen);
         mFullscreenActionsScroll = findViewById(R.id.mobile_fullscreen_actions_scroll);
         mFullscreenActions = findViewById(R.id.mobile_fullscreen_actions);
+        mControlsBottom = findViewById(R.id.mobile_controls_bottom);
         mTimeBar = findViewById(R.id.mobile_time_bar);
         mSeekHint = findViewById(R.id.mobile_seek_hint);
         mShortsOverlay = findViewById(R.id.mobile_shorts_overlay);
@@ -808,20 +810,44 @@ public class MobilePlaybackActivity extends MobileActivity implements PlaybackVi
         setPlayerResizeMode(mIsShorts ? AspectRatioFrameLayout.RESIZE_MODE_ZOOM : mResizeMode);
         mThumb.setScaleType(mIsShorts ? ImageView.ScaleType.CENTER_CROP : ImageView.ScaleType.FIT_CENTER);
 
-        // Time bar: above the full screen actions or at the bottom
+        // Time bar. Full screen with the controls: between the time row and the quick actions, with side margins.
+        // Otherwise: the thin line at the bottom of the video.
         ViewGroup.MarginLayoutParams barLp = (ViewGroup.MarginLayoutParams) mTimeBar.getLayoutParams();
-        int barMargin = mIsFullscreen && !mIsShorts && mIsControlsShown ? dp(66) : (mIsFullscreen && !mIsShorts && mIsControlsShown ? dp(16) : 0);
-        if (mIsFullscreen && !mIsShorts) {
-            barMargin = mIsControlsShown ? dp(66) : 0;
-        }
-        if (barLp.bottomMargin != barMargin) {
+        boolean isFullscreenBar = mIsFullscreen && !mIsShorts && mIsControlsShown;
+        int barMargin = isFullscreenBar ? getFullscreenBarMargin() : 0;
+        int sideMargin = isFullscreenBar ? dp(16) : 0;
+        if (barLp.bottomMargin != barMargin || barLp.leftMargin != sideMargin) {
             barLp.bottomMargin = barMargin;
+            barLp.leftMargin = sideMargin;
+            barLp.rightMargin = sideMargin;
             mTimeBar.setLayoutParams(barLp);
+        }
+        if (isFullscreenBar && mControlsBottom.getHeight() == 0) {
+            mControlsBottom.post(this::applyLayout); // not measured yet
         }
         // Full screen: the bar is hidden with the controls, like the YouTube app
         mTimeBar.setAlpha(mIsFullscreen && !mIsShorts && !mIsControlsShown ? 0 : 1);
 
         applySystemBars(playerOnly || isPip);
+    }
+
+    /**
+     * Bottom margin that puts the middle of the time bar in the gap between the time row and the quick actions
+     */
+    private int getFullscreenBarMargin() {
+        View timeRow = (View) mTime.getParent();
+        int bottomHeight = mControlsBottom.getHeight();
+
+        if (bottomHeight == 0 || timeRow == null) {
+            return dp(56);
+        }
+
+        // In the bottom controls: the gap is between the time row bottom and the actions top
+        int gapCenterFromTop = (timeRow.getBottom() + mFullscreenActionsScroll.getTop()) / 2;
+        int bottomMarginOfControls = ((ViewGroup.MarginLayoutParams) mControlsBottom.getLayoutParams()).bottomMargin;
+        int centerFromBottom = bottomHeight - gapCenterFromTop + bottomMarginOfControls;
+
+        return Math.max(0, centerFromBottom - mTimeBar.getHeight() / 2);
     }
 
     @SuppressLint("WrongConstant") // the modes of PlayerConstants are the AspectRatioFrameLayout ones

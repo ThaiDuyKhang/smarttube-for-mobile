@@ -259,7 +259,7 @@
                         android:id="@+id/mobile_fullscreen_actions_scroll"
                         android:layout_width="match_parent"
                         android:layout_height="wrap_content"
-                        android:layout_marginTop="16dp"
+                        android:layout_marginTop="24dp"
                         android:scrollbars="none"
                         android:visibility="gone">
 
