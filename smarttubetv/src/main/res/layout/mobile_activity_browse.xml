@@ -78,7 +78,18 @@
                 android:paddingStart="16dp"
                 android:paddingEnd="4dp">
 
+                <ImageButton
+                    android:id="@+id/mobile_back"
+                    android:layout_width="48dp"
+                    android:layout_height="48dp"
+                    android:layout_marginStart="-12dp"
+                    android:background="?android:attr/selectableItemBackground"
+                    android:contentDescription="@string/mobile_back"
+                    android:src="@drawable/mobile_ic_back"
+                    android:visibility="gone" />
+
                 <TextView
+                    android:id="@+id/mobile_logo"
                     android:layout_width="30dp"
                     android:layout_height="22dp"
                     android:background="@drawable/mobile_logo_bg"

@@ -77,4 +77,11 @@
     <string name="mobile_filter_live">Trực tiếp</string>
     <string name="mobile_filter_continue">Tiếp tục xem</string>
     <string name="mobile_filter_unwatched">Chưa xem</string>
+    <string name="mobile_donate_title">Tặng tác giả ly cà phê</string>
+    <string name="mobile_donate_message">Cảm ơn bạn đã dùng SmartTube Mobile! Quét mã bằng ứng dụng ngân hàng để ủng hộ tác giả.</string>
+    <string name="mobile_donate_bank">Ngân hàng TMCP Quân Đội (MB Bank)</string>
+    <string name="mobile_copy_account">Sao chép số tài khoản</string>
+    <string name="mobile_account_copied">Đã sao chép số tài khoản</string>
+    <string name="mobile_source_code">Mã nguồn</string>
+    <string name="mobile_version">Phiên bản %s</string>
 </resources>

@@ -54,7 +54,9 @@ public class AboutSettingsPresenter extends BasePresenter<Void> {
 
         appendInstallBridge(settingsPresenter);
 
-        if (!Helpers.equalsAny(country, "RU", "UA")) {
+        if (Utils.isMobileBuild(getContext())) {
+            appendMobileLinks(settingsPresenter);
+        } else if (!Helpers.equalsAny(country, "RU", "UA")) {
             appendDonation(settingsPresenter);
             appendFeedback(settingsPresenter);
             appendLinks(settingsPresenter);
@@ -133,6 +135,26 @@ public class AboutSettingsPresenter extends BasePresenter<Void> {
         settingsPresenter.appendSingleButton(releasesOption);
         settingsPresenter.appendSingleButton(sourcesOption);
         //settingsPresenter.appendSingleButton(webSiteOption);
+    }
+
+    /**
+     * Mobile build: buy the author a coffee (bank QR), versions (GitHub releases), source code
+     */
+    private void appendMobileLinks(AppDialogPresenter settingsPresenter) {
+        String repo = "https://github.com/ThaiDuyKhang/smarttube-for-mobile";
+
+        settingsPresenter.appendSingleButton(UiOptionItem.from(getContext().getString(R.string.mobile_donate_title), option -> {
+            settingsPresenter.closeDialog();
+            android.content.Intent intent = new android.content.Intent();
+            intent.setClassName(getContext(), "com.liskovsoft.smartyoutubetv2.tv.ui.mobile.MobileDonateActivity");
+            intent.addFlags(android.content.Intent.FLAG_ACTIVITY_NEW_TASK);
+            getContext().startActivity(intent);
+        }));
+        settingsPresenter.appendSingleButton(UiOptionItem.from(
+                getContext().getString(R.string.mobile_version, AppInfoHelpers.getAppVersionName(getContext())),
+                option -> Utils.openLinkExt(getContext(), repo + "/releases")));
+        settingsPresenter.appendSingleButton(UiOptionItem.from(getContext().getString(R.string.mobile_source_code),
+                option -> Utils.openLinkExt(getContext(), repo)));
     }
 
     private void appendDonation(AppDialogPresenter settingsPresenter) {

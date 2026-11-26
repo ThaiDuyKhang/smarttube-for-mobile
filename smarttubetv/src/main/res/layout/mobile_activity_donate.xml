@@ -1,0 +1,104 @@
+<?xml version="1.0" encoding="utf-8"?>
+<!-- Mobile build: buy the author a coffee (bank transfer QR) -->
+<LinearLayout xmlns:android="http://schemas.android.com/apk/res/android"
+    android:layout_width="match_parent"
+    android:layout_height="match_parent"
+    android:background="@color/mobile_bg"
+    android:orientation="vertical">
+
+    <LinearLayout
+        android:layout_width="match_parent"
+        android:layout_height="56dp"
+        android:gravity="center_vertical"
+        android:orientation="horizontal"
+        android:paddingStart="4dp"
+        android:paddingEnd="16dp">
+
+        <ImageButton
+            android:id="@+id/mobile_donate_back"
+            android:layout_width="48dp"
+            android:layout_height="48dp"
+            android:background="?android:attr/selectableItemBackground"
+            android:contentDescription="@string/mobile_back"
+            android:src="@drawable/mobile_ic_back" />
+
+        <TextView
+            android:layout_width="0dp"
+            android:layout_height="wrap_content"
+            android:layout_marginStart="8dp"
+            android:layout_weight="1"
+            android:ellipsize="end"
+            android:maxLines="1"
+            android:text="@string/mobile_donate_title"
+            android:textColor="@color/mobile_text"
+            android:textSize="19sp"
+            android:textStyle="bold" />
+    </LinearLayout>
+
+    <ScrollView
+        android:layout_width="match_parent"
+        android:layout_height="0dp"
+        android:layout_weight="1">
+
+        <LinearLayout
+            android:layout_width="match_parent"
+            android:layout_height="wrap_content"
+            android:gravity="center_horizontal"
+            android:orientation="vertical"
+            android:padding="24dp">
+
+            <TextView
+                android:layout_width="wrap_content"
+                android:layout_height="wrap_content"
+                android:gravity="center"
+                android:text="@string/mobile_donate_message"
+                android:textColor="@color/mobile_text_secondary"
+                android:textSize="14sp" />
+
+            <ImageView
+                android:layout_width="240dp"
+                android:layout_height="240dp"
+                android:layout_marginTop="20dp"
+                android:background="#FFFFFF"
+                android:contentDescription="@string/mobile_qr_code"
+                android:padding="8dp"
+                android:scaleType="fitCenter"
+                android:src="@drawable/mobile_donate_qr" />
+
+            <TextView
+                android:layout_width="wrap_content"
+                android:layout_height="wrap_content"
+                android:layout_marginTop="20dp"
+                android:text="@string/mobile_donate_bank"
+                android:textColor="@color/mobile_text_secondary"
+                android:textSize="14sp" />
+
+            <TextView
+                android:id="@+id/mobile_donate_account"
+                android:layout_width="wrap_content"
+                android:layout_height="wrap_content"
+                android:layout_marginTop="6dp"
+                android:fontFamily="monospace"
+                android:text="6006101991"
+                android:textColor="@color/mobile_text"
+                android:textIsSelectable="true"
+                android:textSize="26sp"
+                android:textStyle="bold" />
+
+            <TextView
+                android:layout_width="wrap_content"
+                android:layout_height="wrap_content"
+                android:layout_marginTop="4dp"
+                android:text="THAI DUY KHANG"
+                android:textColor="@color/mobile_text"
+                android:textSize="16sp" />
+
+            <TextView
+                android:id="@+id/mobile_donate_copy"
+                style="@style/MobilePill"
+                android:layout_marginTop="16dp"
+                android:layout_marginEnd="0dp"
+                android:text="@string/mobile_copy_account" />
+        </LinearLayout>
+    </ScrollView>
+</LinearLayout>

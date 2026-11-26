@@ -79,4 +79,11 @@
     <string name="mobile_filter_live">Live</string>
     <string name="mobile_filter_continue">Continue watching</string>
     <string name="mobile_filter_unwatched">Unwatched</string>
+    <string name="mobile_donate_title">Buy the author a coffee</string>
+    <string name="mobile_donate_message">Thank you for using SmartTube Mobile! Scan the code with your banking app.</string>
+    <string name="mobile_donate_bank">MB Bank (Military Commercial Joint Stock Bank)</string>
+    <string name="mobile_copy_account">Copy account number</string>
+    <string name="mobile_account_copied">Account number copied</string>
+    <string name="mobile_source_code">Source code</string>
+    <string name="mobile_version">Version %s</string>
 </resources>

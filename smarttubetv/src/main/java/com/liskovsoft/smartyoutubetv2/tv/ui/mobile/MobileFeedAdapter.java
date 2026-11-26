@@ -264,11 +264,31 @@ public class MobileFeedAdapter extends RecyclerView.Adapter<RecyclerView.ViewHol
         view.findViewById(R.id.mobile_page_more).setOnClickListener(v -> mCallback.onVideoLongClicked(video));
     }
 
+    /**
+     * The TV settings icons replaced with the Lucide ones
+     */
+    private static int toLucideIcon(int resId) {
+        if (resId == R.drawable.settings_account) return R.drawable.mobile_ic_set_account;
+        if (resId == R.drawable.settings_cast) return R.drawable.mobile_ic_set_cast;
+        if (resId == R.drawable.settings_language) return R.drawable.mobile_ic_set_language;
+        if (resId == R.drawable.settings_app) return R.drawable.mobile_ic_set_app;
+        if (resId == R.drawable.settings_main_ui) return R.drawable.mobile_ic_set_main_ui;
+        if (resId == R.drawable.settings_player) return R.drawable.mobile_ic_set_player;
+        if (resId == R.drawable.settings_afr) return R.drawable.mobile_ic_set_afr;
+        if (resId == R.drawable.settings_subtitles) return R.drawable.mobile_ic_set_subtitles;
+        if (resId == R.drawable.settings_search) return R.drawable.mobile_ic_set_search;
+        if (resId == R.drawable.settings_block) return R.drawable.mobile_ic_set_block;
+        if (resId == R.drawable.settings_dearrow) return R.drawable.mobile_ic_set_dearrow;
+        if (resId == R.drawable.settings_backup) return R.drawable.mobile_ic_set_backup;
+        if (resId == R.drawable.settings_about) return R.drawable.mobile_ic_set_about;
+        return resId;
+    }
+
     private void bindSetting(View view, SettingsItem setting) {
         ImageView icon = view.findViewById(R.id.mobile_row_icon);
         if (setting.imageResId > 0) {
             icon.setVisibility(View.VISIBLE);
-            icon.setImageResource(setting.imageResId);
+            icon.setImageResource(toLucideIcon(setting.imageResId));
         } else {
             icon.setVisibility(View.INVISIBLE);
         }

@@ -10,6 +10,7 @@ import android.content.res.Resources;
 import android.view.View;
 import android.view.ViewGroup;
 import android.widget.Button;
+import android.widget.ImageButton;
 import android.widget.ImageView;
 import android.widget.LinearLayout;
 import android.widget.ProgressBar;
@@ -247,6 +248,13 @@ public class MobileBrowseActivity extends MobileActivity implements BrowseView, 
         mFeed.setAdapter(mAdapter);
         mFeed.addOnScrollListener(new RecyclerView.OnScrollListener() {
             @Override
+            public void onScrollStateChanged(@NonNull RecyclerView recyclerView, int newState) {
+                if (newState == RecyclerView.SCROLL_STATE_IDLE) {
+                    snapHeader();
+                }
+            }
+
+            @Override
             public void onScrolled(@NonNull RecyclerView recyclerView, int dx, int dy) {
                 checkLoadMore();
                 moveHeader(dy);
@@ -257,7 +265,14 @@ public class MobileBrowseActivity extends MobileActivity implements BrowseView, 
         mDrawerScrim.setOnClickListener(v -> closeDrawer());
         findViewById(R.id.mobile_search).setOnClickListener(v -> SearchPresenter.instance(this).startSearch(null));
         mNotificationsButton.setOnClickListener(v -> openSectionById(MediaGroup.TYPE_NOTIFICATIONS));
-        mSettingsButton.setOnClickListener(v -> onSettingsClicked());
+        mSettingsButton.setOnClickListener(v -> {
+            if (mCurrentSection != null && mCurrentSection.getId() == MediaGroup.TYPE_SETTINGS) {
+                openSectionById(MediaGroup.TYPE_HISTORY); // close the settings: back to the You page
+            } else {
+                onSettingsClicked();
+            }
+        });
+        findViewById(R.id.mobile_back).setOnClickListener(v -> onBackPressed());
 
         ((TextView) findViewById(R.id.mobile_drawer_footer)).setText(
                 String.format("%s %s", getString(R.string.app_name), AppInfoHelpers.getAppVersionName(this)));
@@ -318,6 +333,14 @@ public class MobileBrowseActivity extends MobileActivity implements BrowseView, 
         mTopBar.setVisibility(isShorts ? View.GONE : View.VISIBLE);
         mChipsScroll.setVisibility(mCurrentTab == TAB_HOME ? View.VISIBLE : View.GONE);
         mSettingsButton.setVisibility(isYou ? View.VISIBLE : View.GONE);
+        // Pages of the You tab (settings, playlists, channels...): back arrow and the page name, X closes the settings
+        boolean isSubpage = isYou && !isYouRoot();
+        boolean isSettings = mCurrentSection != null && mCurrentSection.getId() == MediaGroup.TYPE_SETTINGS;
+        findViewById(R.id.mobile_back).setVisibility(isSubpage ? View.VISIBLE : View.GONE);
+        findViewById(R.id.mobile_logo).setVisibility(isSubpage ? View.GONE : View.VISIBLE);
+        ((TextView) findViewById(R.id.mobile_title)).setText(isSubpage ? mCurrentSection.getTitle() : getString(R.string.mobile_app_title));
+        ((ImageButton) mSettingsButton).setImageResource(isSettings ? R.drawable.mobile_ic_close : R.drawable.mobile_ic_settings);
+        mSettingsButton.setContentDescription(getString(isSettings ? R.string.mobile_close_player : R.string.mobile_settings));
         mNotificationsButton.setVisibility(findSection(MediaGroup.TYPE_NOTIFICATIONS) != null ? View.VISIBLE : View.GONE);
         // Shorts pages fill the feed exactly, so no bottom padding there
         mSubsHeader.setVisibility(mCurrentTab == TAB_SUBSCRIPTIONS && MobileUi.isSignedIn() ? View.VISIBLE : View.GONE);
@@ -505,6 +528,7 @@ public class MobileBrowseActivity extends MobileActivity implements BrowseView, 
 
         for (BrowseSection section : mSections) {
             View row = inflater.inflate(R.layout.mobile_item_setting, mDrawerItems, false);
+            row.getLayoutParams().height = dp(44); // denser than the settings list, like the YouTube menu
             ImageView icon = row.findViewById(R.id.mobile_row_icon);
             if (getSectionIcon(section) > 0) {
                 icon.setImageResource(getSectionIcon(section));
@@ -560,12 +584,28 @@ public class MobileBrowseActivity extends MobileActivity implements BrowseView, 
             return;
         }
 
+        mHeader.animate().cancel();
         float translation = mHeader.getTranslationY() - dy;
         // At the top of the list the header is always shown
         if (!mFeed.canScrollVertically(-1)) {
             translation = 0;
         }
         mHeader.setTranslationY(Math.max(-height, Math.min(0, translation)));
+    }
+
+    /**
+     * A half hidden header goes fully up or down when the list stops
+     */
+    private void snapHeader() {
+        int height = mHeader.getHeight();
+        float translation = mHeader.getTranslationY();
+
+        if (height == 0 || translation == 0 || translation == -height) {
+            return;
+        }
+
+        boolean show = translation > -height / 2f || !mFeed.canScrollVertically(-1);
+        mHeader.animate().translationY(show ? 0 : -height).setDuration(150).start();
     }
 
     private void showHeader() {
@@ -701,8 +741,6 @@ public class MobileBrowseActivity extends MobileActivity implements BrowseView, 
                 if (hasVideos()) {
                     items.add(MobileFeedAdapter.Item.header(getString(R.string.mobile_watched_videos), mHistoryHeaderOwner));
                 }
-            } else {
-                items.add(MobileFeedAdapter.Item.header(mCurrentSection.getTitle(), mCurrentSection));
             }
         }
 
