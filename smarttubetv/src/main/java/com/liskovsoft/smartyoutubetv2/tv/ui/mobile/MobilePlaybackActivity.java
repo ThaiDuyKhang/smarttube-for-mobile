@@ -127,6 +127,7 @@ public class MobilePlaybackActivity extends MobileActivity implements PlaybackVi
     private boolean mIsDescriptionShown;
     private boolean mIsAutoplayPending;
     private long mPipExitTimeMs;
+    private boolean mIsStopped;
     private boolean mIsPausedByUser;
 
     private final Runnable mHideControls = () -> setControlsShown(false);
@@ -181,6 +182,7 @@ public class MobilePlaybackActivity extends MobileActivity implements PlaybackVi
     @Override
     protected void onStart() {
         super.onStart();
+        mIsStopped = false;
 
         if (Util.SDK_INT > 23) {
             initializePlayer();
@@ -234,16 +236,11 @@ public class MobilePlaybackActivity extends MobileActivity implements PlaybackVi
     protected void onStop() {
         super.onStop();
 
+        mIsStopped = true;
+
         // The PIP window has just been closed: the video stops (it isn't brought back to the screen)
         if (android.os.SystemClock.uptimeMillis() - mPipExitTimeMs < 2_000 && !isInPipMode() && !isFinishing()) {
-            mPipExitTimeMs = 0;
-            if (mPlayer != null && getPlayWhenReady()) {
-                setPlayWhenReady(false);
-                mPresenter.onPauseClicked();
-            }
-            blockEngine(false);
-            getViewManager().blockTop(null);
-            MobilePlaybackService.stop(this);
+            closePipPlayback();
         }
 
         if (Util.SDK_INT > 23) {
@@ -385,8 +382,13 @@ public class MobilePlaybackActivity extends MobileActivity implements PlaybackVi
         super.onPictureInPictureModeChanged(isInPictureInPictureMode);
 
         if (!isInPictureInPictureMode) {
-            // Closed (X, swiped away) or expanded: onStop tells which one
-            mPipExitTimeMs = android.os.SystemClock.uptimeMillis();
+            if (mIsStopped) {
+                // Android 10+: X pressed on the small window (onStop came first)
+                closePipPlayback();
+            } else {
+                // Closed (X, swiped away) or expanded: onStop tells which one
+                mPipExitTimeMs = android.os.SystemClock.uptimeMillis();
+            }
         }
 
         // PIP window: the video only
@@ -465,6 +467,25 @@ public class MobilePlaybackActivity extends MobileActivity implements PlaybackVi
             builder.setSeamlessResizeEnabled(true);
         }
         return builder.build();
+    }
+
+    /**
+     * The small window was closed: stop the sound and free the player, like the YouTube app
+     */
+    private void closePipPlayback() {
+        mPipExitTimeMs = 0;
+        Log.d(TAG, "PIP window closed: stopping the playback");
+
+        if (mPlayer != null && getPlayWhenReady()) {
+            setPlayWhenReady(false);
+            mPresenter.onPauseClicked();
+        }
+
+        blockEngine(false);
+        getViewManager().blockTop(null);
+        MobilePlaybackService.stop(this);
+        updateKeepScreenOn(false);
+        releasePlayer();
     }
 
     private boolean skipPip() {
