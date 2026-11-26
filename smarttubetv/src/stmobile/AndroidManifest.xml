@@ -29,6 +29,9 @@
         android:name="android.hardware.wifi"
         android:required="false" />
 
+    <!-- Tell "no internet" apart from other errors -->
+    <uses-permission android:name="android.permission.ACCESS_NETWORK_STATE" />
+
     <application>
         <!-- Phone main screen (see MainApplication: registered instead of the TV one) -->
         <activity
@@ -49,6 +52,37 @@
             android:showWhenLocked="true"
             android:supportsPictureInPicture="true"
             tools:targetApi="27" />
+
+        <!-- Phone sign in and link device screens -->
+        <activity
+            android:name="com.liskovsoft.smartyoutubetv2.tv.ui.mobile.MobileSignInActivity"
+            android:configChanges="screenSize|smallestScreenSize|screenLayout|orientation|layoutDirection"
+            android:exported="false"
+            android:launchMode="singleInstance"
+            android:screenOrientation="unspecified" />
+
+        <activity
+            android:name="com.liskovsoft.smartyoutubetv2.tv.ui.mobile.MobileAddDeviceActivity"
+            android:configChanges="screenSize|smallestScreenSize|screenLayout|orientation|layoutDirection"
+            android:exported="false"
+            android:launchMode="singleInstance"
+            android:screenOrientation="unspecified" />
+
+        <!-- Phone channel page -->
+        <activity
+            android:name="com.liskovsoft.smartyoutubetv2.tv.ui.mobile.MobileChannelActivity"
+            android:configChanges="screenSize|smallestScreenSize|screenLayout|orientation|layoutDirection"
+            android:exported="false"
+            android:launchMode="singleInstance"
+            android:screenOrientation="unspecified"
+            android:windowSoftInputMode="adjustResize|stateHidden" />
+
+        <activity
+            android:name="com.liskovsoft.smartyoutubetv2.tv.ui.mobile.MobileChannelUploadsActivity"
+            android:configChanges="screenSize|smallestScreenSize|screenLayout|orientation|layoutDirection"
+            android:exported="false"
+            android:launchMode="singleInstance"
+            android:screenOrientation="unspecified" />
 
         <!-- Phone search screen -->
         <activity

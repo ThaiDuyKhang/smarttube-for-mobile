@@ -11,6 +11,23 @@
         <item name="android:navigationBarColor" tools:targetApi="21">@color/mobile_bg</item>
         <item name="android:windowTranslucentStatus" tools:targetApi="19">false</item>
         <item name="android:windowTranslucentNavigation" tools:targetApi="19">false</item>
+        <item name="android:windowAnimationStyle">@style/MobileWindowAnimation</item>
+    </style>
+
+    <!-- Short fades between the screens (no TV slide), e.g. a short opens in place -->
+    <style name="MobileWindowAnimation" parent="@android:style/Animation.Activity">
+        <item name="android:activityOpenEnterAnimation">@anim/mobile_fade_in</item>
+        <item name="android:activityOpenExitAnimation">@anim/mobile_fade_out</item>
+        <item name="android:activityCloseEnterAnimation">@anim/mobile_fade_in</item>
+        <item name="android:activityCloseExitAnimation">@anim/mobile_fade_out</item>
+        <item name="android:taskOpenEnterAnimation">@anim/mobile_fade_in</item>
+        <item name="android:taskOpenExitAnimation">@anim/mobile_fade_out</item>
+        <item name="android:taskCloseEnterAnimation">@anim/mobile_fade_in</item>
+        <item name="android:taskCloseExitAnimation">@anim/mobile_fade_out</item>
+        <item name="android:taskToFrontEnterAnimation">@anim/mobile_fade_in</item>
+        <item name="android:taskToFrontExitAnimation">@anim/mobile_fade_out</item>
+        <item name="android:taskToBackEnterAnimation">@anim/mobile_fade_in</item>
+        <item name="android:taskToBackExitAnimation">@anim/mobile_fade_out</item>
     </style>
 
     <style name="MobilePlayerButton">

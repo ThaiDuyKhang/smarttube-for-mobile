@@ -33,6 +33,7 @@ import com.liskovsoft.smartyoutubetv2.common.app.models.data.VideoGroup;
 import com.liskovsoft.smartyoutubetv2.common.app.models.errors.ErrorFragmentData;
 import com.liskovsoft.smartyoutubetv2.common.app.presenters.BrowsePresenter;
 import com.liskovsoft.smartyoutubetv2.common.app.presenters.SearchPresenter;
+import com.liskovsoft.smartyoutubetv2.common.app.presenters.YTSignInPresenter;
 import com.liskovsoft.smartyoutubetv2.common.app.presenters.dialogs.AccountSelectionPresenter;
 import com.liskovsoft.smartyoutubetv2.common.app.views.BrowseView;
 import com.liskovsoft.smartyoutubetv2.common.misc.MediaServiceManager;
@@ -843,11 +844,24 @@ public class MobileBrowseActivity extends MobileActivity implements BrowseView, 
         }
 
         mErrorView.setVisibility(View.VISIBLE);
-        mErrorMessage.setText(data.getMessage());
+        String message = MobileUi.toReadableError(this, data.getMessage());
+        mErrorMessage.setText(message);
         String actionText = data.getActionText();
 
+        if (!MobileUi.isOnline(this)) {
+            actionText = null; // no network: "retry" instead of "sign in"
+        }
+
         if (TextUtils.isEmpty(actionText)) {
-            mErrorAction.setVisibility(View.GONE);
+            // Network and other errors: offer to load the section again
+            BrowseSection section = mCurrentSection;
+            boolean canRetry = section != null && !TextUtils.equals(message, data.getMessage());
+            mErrorAction.setVisibility(canRetry ? View.VISIBLE : View.GONE);
+            mErrorAction.setText(R.string.mobile_retry);
+            mErrorAction.setOnClickListener(v -> {
+                hideError();
+                mPresenter.onSectionFocused(section.getId());
+            });
         } else {
             mErrorAction.setVisibility(View.VISIBLE);
             mErrorAction.setText(actionText);
@@ -905,7 +919,12 @@ public class MobileBrowseActivity extends MobileActivity implements BrowseView, 
 
     @Override
     public void onSwitchAccountClicked() {
-        AccountSelectionPresenter.instance(this).show(true);
+        if (getAccount() == null) {
+            // Not signed in: straight to the sign in screen (the account list would be empty)
+            YTSignInPresenter.instance(this).start();
+        } else {
+            AccountSelectionPresenter.instance(this).show(true);
+        }
     }
 
     @Override

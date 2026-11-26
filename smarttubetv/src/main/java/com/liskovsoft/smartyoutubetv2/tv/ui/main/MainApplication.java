@@ -29,6 +29,10 @@ import com.liskovsoft.smartyoutubetv2.tv.ui.adddevice.AddDeviceActivity;
 import com.liskovsoft.smartyoutubetv2.tv.ui.browse.BrowseActivity;
 import com.liskovsoft.smartyoutubetv2.tv.ui.mobile.MobileBrowseActivity;
 import com.liskovsoft.smartyoutubetv2.tv.ui.mobile.MobileSearchActivity;
+import com.liskovsoft.smartyoutubetv2.tv.ui.mobile.MobileChannelActivity;
+import com.liskovsoft.smartyoutubetv2.tv.ui.mobile.MobileChannelUploadsActivity;
+import com.liskovsoft.smartyoutubetv2.tv.ui.mobile.MobileSignInActivity;
+import com.liskovsoft.smartyoutubetv2.tv.ui.mobile.MobileAddDeviceActivity;
 import com.liskovsoft.smartyoutubetv2.tv.ui.mobile.MobilePlaybackActivity;
 import com.liskovsoft.smartyoutubetv2.common.utils.Utils;
 import com.liskovsoft.smartyoutubetv2.tv.ui.channel.ChannelActivity;
@@ -117,10 +121,10 @@ public class MainApplication extends MultiDexApplication implements Configuratio
         viewManager.register(PlaybackView.class, Utils.isMobileBuild(this) ? MobilePlaybackActivity.class : PlaybackActivity.class, browseClass);
         viewManager.register(AppDialogView.class, dialogClass, browseClass);
         viewManager.register(SearchView.class, Utils.isMobileBuild(this) ? MobileSearchActivity.class : SearchTagsActivity.class, browseClass);
-        viewManager.register(SignInView.class, SignInActivity.class, browseClass);
-        viewManager.register(AddDeviceView.class, AddDeviceActivity.class, browseClass);
-        viewManager.register(ChannelView.class, ChannelActivity.class, browseClass);
-        viewManager.register(ChannelUploadsView.class, ChannelUploadsActivity.class, browseClass);
+        viewManager.register(SignInView.class, Utils.isMobileBuild(this) ? MobileSignInActivity.class : SignInActivity.class, browseClass);
+        viewManager.register(AddDeviceView.class, Utils.isMobileBuild(this) ? MobileAddDeviceActivity.class : AddDeviceActivity.class, browseClass);
+        viewManager.register(ChannelView.class, Utils.isMobileBuild(this) ? MobileChannelActivity.class : ChannelActivity.class, browseClass);
+        viewManager.register(ChannelUploadsView.class, Utils.isMobileBuild(this) ? MobileChannelUploadsActivity.class : ChannelUploadsActivity.class, browseClass);
         viewManager.register(WebBrowserView.class, WebBrowserActivity.class, browseClass);
     }
 

@@ -50,4 +50,19 @@
     <string name="mobile_seek_back">-10 giây</string>
     <string name="mobile_seek_forward">+10 giây</string>
     <string name="mobile_channel">Kênh</string>
+    <string name="mobile_copy_code">Sao chép mã</string>
+    <string name="mobile_code_copied">Đã sao chép mã. Dán vào trang đăng nhập.</string>
+    <string name="mobile_qr_code">Mã QR</string>
+    <string name="mobile_qr_hint">Hoặc quét mã này bằng thiết bị khác</string>
+    <string name="mobile_sign_in_hint">Mã đăng nhập của bạn</string>
+    <string name="mobile_link_device_hint">Mã TV của bạn</string>
+    <string name="mobile_link_device">Liên kết bằng mã TV</string>
+    <string name="mobile_sign_in_required_title">Đăng nhập để tiếp tục</string>
+    <string name="mobile_sign_in_required">Tính năng này cần tài khoản YouTube của bạn (thích video, lưu vào danh sách phát, đăng ký kênh và nhật ký xem).</string>
+    <string name="mobile_error_network">Không có kết nối mạng. Kiểm tra kết nối rồi thử lại.</string>
+    <string name="mobile_error_generic">Đã xảy ra lỗi khi tải nội dung. Hãy thử lại.</string>
+    <string name="mobile_channel_search_hint">Tìm kiếm trên kênh</string>
+    <string name="mobile_sort">Sắp xếp</string>
+    <string name="mobile_channel_home">Trang chủ</string>
+    <string name="mobile_search_results">Kết quả</string>
 </resources>

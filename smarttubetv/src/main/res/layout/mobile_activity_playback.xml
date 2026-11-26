@@ -184,7 +184,7 @@
                         android:id="@+id/mobile_player_settings"
                         style="@style/MobilePlayerButton"
                         android:contentDescription="@string/mobile_player_settings"
-                        android:src="@drawable/mobile_ic_tune" />
+                        android:src="@drawable/mobile_ic_settings" />
                 </LinearLayout>
 
                 <LinearLayout

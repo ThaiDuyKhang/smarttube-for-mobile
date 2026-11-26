@@ -125,6 +125,8 @@ public class MobilePlaybackActivity extends MobileActivity implements PlaybackVi
     private int mLastWidth;
     private int mLastHeight;
     private boolean mIsDescriptionShown;
+    private boolean mIsAutoplayPending;
+    private boolean mIsPausedByUser;
 
     private final Runnable mHideControls = () -> setControlsShown(false);
     private final Runnable mUpdateProgress = new Runnable() {
@@ -417,8 +419,13 @@ public class MobilePlaybackActivity extends MobileActivity implements PlaybackVi
             @Override
             public boolean onSingleTapConfirmed(MotionEvent e) {
                 if (mIsShorts) {
-                    togglePlayback();
-                    showSeekHint(getString(isPlaying() ? R.string.mobile_play : R.string.mobile_pause), true);
+                    boolean isLoading = mPlayer != null && mPlayer.getPlaybackState() != Player.STATE_READY && mPlayer.getPlaybackState() != Player.STATE_ENDED;
+                    if (isLoading) {
+                        setPlayWhenReady(true); // still loading: keep it playing
+                    } else {
+                        togglePlayback();
+                        showSeekHint(getString(getPlayWhenReady() ? R.string.mobile_play : R.string.mobile_pause), true);
+                    }
                 } else {
                     showControls(!mIsControlsShown);
                 }
@@ -744,6 +751,7 @@ public class MobilePlaybackActivity extends MobileActivity implements PlaybackVi
         }
 
         if (getPlayWhenReady()) {
+            mIsPausedByUser = true;
             setPlayWhenReady(false);
             mPresenter.onPauseClicked();
         } else {
@@ -821,6 +829,15 @@ public class MobilePlaybackActivity extends MobileActivity implements PlaybackVi
     }
 
     private void clickButton(int buttonId) {
+        // These need an account: explain it and offer to sign in (instead of "nothing here")
+        boolean needsAccount = buttonId == R.id.action_thumbs_up || buttonId == R.id.action_thumbs_down
+                || buttonId == R.id.action_playlist_add || buttonId == R.id.action_subscribe;
+
+        if (needsAccount && !MobileUi.isSignedIn()) {
+            MobileUi.requireSignIn(this, () -> { });
+            return;
+        }
+
         mPresenter.onButtonClicked(buttonId, getButtonState(buttonId));
         scheduleHideControls();
     }
@@ -962,6 +979,20 @@ public class MobilePlaybackActivity extends MobileActivity implements PlaybackVi
             @Override
             public void onPlayerStateChanged(boolean playWhenReady, int playbackState) {
                 mBuffering.setVisibility(playbackState == Player.STATE_BUFFERING ? View.VISIBLE : View.GONE);
+
+                // A video opened from the app starts right away, like the YouTube app (unless paused by the user)
+                if (playbackState == Player.STATE_READY && mIsAutoplayPending) {
+                    mIsAutoplayPending = false;
+                    if (!playWhenReady && !mIsPausedByUser && !isEngineBlocked()) {
+                        setPlayWhenReady(true);
+                        playWhenReady = true;
+                    }
+                }
+
+                if (playbackState == Player.STATE_READY && playWhenReady) {
+                    mThumb.setVisibility(View.GONE); // the first frame callback isn't reliable on every device
+                }
+
                 updatePlayPause();
 
                 if (playbackState == Player.STATE_ENDED) {
@@ -1461,6 +1492,10 @@ public class MobilePlaybackActivity extends MobileActivity implements PlaybackVi
     @Override
     public void setChannelIcon(String iconUrl) {
         ImageView avatar = mDetails.findViewById(R.id.mobile_watch_avatar);
+        Video video = getVideo();
+        if (video != null) {
+            MobileUi.putChannelIcon(video.channelId, iconUrl);
+        }
 
         if (TextUtils.isEmpty(iconUrl)) {
             avatar.setImageDrawable(null);
@@ -1537,6 +1572,12 @@ public class MobilePlaybackActivity extends MobileActivity implements PlaybackVi
 
     @Override
     public void setVideo(Video video) {
+        Video previous = getVideo();
+        if (video != null && (previous == null || !TextUtils.equals(previous.videoId, video.videoId))) {
+            mIsAutoplayPending = true;
+            mIsPausedByUser = false;
+        }
+
         mExoPlayerController.setVideo(video);
 
         if (video != null) {
