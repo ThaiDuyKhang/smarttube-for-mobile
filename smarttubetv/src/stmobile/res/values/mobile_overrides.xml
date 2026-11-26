@@ -1,0 +1,5 @@
+<?xml version="1.0" encoding="utf-8"?>
+<!-- Mobile build: dialogs as dark bottom sheets (see AppDialogActivity) -->
+<resources>
+    <color name="lb_preference_decor_list_background">#212121</color>
+</resources>

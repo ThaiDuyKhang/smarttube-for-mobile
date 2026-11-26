@@ -1,0 +1,290 @@
+<?xml version="1.0" encoding="utf-8"?>
+<!-- Mobile build: watch page. Player on top, details and related videos below. Full screen in landscape. -->
+<FrameLayout xmlns:android="http://schemas.android.com/apk/res/android"
+    xmlns:app="http://schemas.android.com/apk/res-auto"
+    xmlns:tools="http://schemas.android.com/tools"
+    android:id="@+id/mobile_watch_root"
+    android:layout_width="match_parent"
+    android:layout_height="match_parent"
+    android:background="@color/mobile_bg">
+
+    <LinearLayout
+        android:layout_width="match_parent"
+        android:layout_height="match_parent"
+        android:orientation="vertical">
+
+        <FrameLayout
+            android:id="@+id/mobile_player"
+            android:layout_width="match_parent"
+            android:layout_height="220dp"
+            android:background="#000000">
+
+            <com.google.android.exoplayer2.ui.PlayerView
+                android:id="@+id/mobile_video"
+                android:layout_width="match_parent"
+                android:layout_height="match_parent"
+                app:resize_mode="fit"
+                app:shutter_background_color="#000000"
+                app:surface_type="surface_view"
+                app:use_artwork="false"
+                app:use_controller="false" />
+
+            <ImageView
+                android:id="@+id/mobile_player_thumb"
+                android:layout_width="match_parent"
+                android:layout_height="match_parent"
+                android:importantForAccessibility="no"
+                android:scaleType="fitCenter" />
+
+            <!-- Shorts: channel, title and actions over the video -->
+            <FrameLayout
+                android:id="@+id/mobile_shorts_overlay"
+                android:layout_width="match_parent"
+                android:layout_height="match_parent"
+                android:background="@drawable/mobile_shorts_gradient"
+                android:visibility="gone">
+
+                <LinearLayout
+                    android:layout_width="match_parent"
+                    android:layout_height="wrap_content"
+                    android:layout_gravity="bottom"
+                    android:layout_marginEnd="72dp"
+                    android:layout_marginBottom="24dp"
+                    android:orientation="vertical"
+                    android:paddingStart="12dp">
+
+                    <TextView
+                        android:id="@+id/mobile_shorts_channel"
+                        android:layout_width="wrap_content"
+                        android:layout_height="wrap_content"
+                        android:background="?android:attr/selectableItemBackground"
+                        android:paddingTop="4dp"
+                        android:paddingBottom="4dp"
+                        android:shadowColor="#80000000"
+                        android:shadowRadius="4"
+                        android:textColor="#FFFFFF"
+                        android:textSize="15sp"
+                        android:textStyle="bold" />
+
+                    <TextView
+                        android:id="@+id/mobile_shorts_title"
+                        android:layout_width="wrap_content"
+                        android:layout_height="wrap_content"
+                        android:layout_marginTop="4dp"
+                        android:ellipsize="end"
+                        android:maxLines="2"
+                        android:shadowColor="#80000000"
+                        android:shadowRadius="4"
+                        android:textColor="#FFFFFF"
+                        android:textSize="15sp" />
+                </LinearLayout>
+
+                <LinearLayout
+                    android:layout_width="64dp"
+                    android:layout_height="wrap_content"
+                    android:layout_gravity="bottom|end"
+                    android:layout_marginBottom="24dp"
+                    android:gravity="center_horizontal"
+                    android:orientation="vertical">
+
+                    <TextView
+                        android:id="@+id/mobile_shorts_like"
+                        style="@style/MobileShortsAction"
+                        android:drawableTop="@drawable/mobile_ic_like"
+                        android:text="@string/mobile_like" />
+
+                    <TextView
+                        android:id="@+id/mobile_shorts_dislike"
+                        style="@style/MobileShortsAction"
+                        android:drawableTop="@drawable/mobile_ic_dislike"
+                        android:text="@string/mobile_dislike" />
+
+                    <TextView
+                        android:id="@+id/mobile_shorts_comments"
+                        style="@style/MobileShortsAction"
+                        android:drawableTop="@drawable/mobile_ic_comment"
+                        android:text="@string/mobile_comments" />
+
+                    <TextView
+                        android:id="@+id/mobile_shorts_share"
+                        style="@style/MobileShortsAction"
+                        android:drawableTop="@drawable/mobile_ic_share"
+                        android:text="@string/mobile_share" />
+
+                    <TextView
+                        android:id="@+id/mobile_shorts_more"
+                        style="@style/MobileShortsAction"
+                        android:drawableTop="@drawable/mobile_ic_more_vert"
+                        android:text="" />
+                </LinearLayout>
+            </FrameLayout>
+
+            <ProgressBar
+                android:id="@+id/mobile_player_buffering"
+                android:layout_width="48dp"
+                android:layout_height="48dp"
+                android:layout_gravity="center"
+                android:visibility="gone" />
+
+            <TextView
+                android:id="@+id/mobile_seek_hint"
+                android:layout_width="wrap_content"
+                android:layout_height="wrap_content"
+                android:layout_gravity="center_vertical|start"
+                android:layout_marginStart="48dp"
+                android:background="@drawable/mobile_badge_bg"
+                android:paddingStart="12dp"
+                android:paddingTop="6dp"
+                android:paddingEnd="12dp"
+                android:paddingBottom="6dp"
+                android:textColor="#FFFFFF"
+                android:textSize="14sp"
+                android:visibility="gone" />
+
+            <FrameLayout
+                android:id="@+id/mobile_controls"
+                android:layout_width="match_parent"
+                android:layout_height="match_parent"
+                android:background="#73000000"
+                android:visibility="gone">
+
+                <LinearLayout
+                    android:id="@+id/mobile_controls_top"
+                    android:layout_width="match_parent"
+                    android:layout_height="52dp"
+                    android:gravity="center_vertical"
+                    android:orientation="horizontal"
+                    android:paddingStart="4dp"
+                    android:paddingEnd="4dp">
+
+                    <ImageButton
+                        android:id="@+id/mobile_minimize"
+                        style="@style/MobilePlayerButton"
+                        android:contentDescription="@string/mobile_minimize"
+                        android:src="@drawable/mobile_ic_chevron_down" />
+
+                    <TextView
+                        android:id="@+id/mobile_controls_title"
+                        android:layout_width="0dp"
+                        android:layout_height="wrap_content"
+                        android:layout_marginStart="8dp"
+                        android:layout_weight="1"
+                        android:ellipsize="end"
+                        android:maxLines="1"
+                        android:textColor="#FFFFFF"
+                        android:textSize="16sp" />
+
+                    <ImageButton
+                        android:id="@+id/mobile_subtitles"
+                        style="@style/MobilePlayerButton"
+                        android:contentDescription="@string/mobile_subtitles"
+                        android:src="@drawable/mobile_ic_cc" />
+
+                    <ImageButton
+                        android:id="@+id/mobile_player_settings"
+                        style="@style/MobilePlayerButton"
+                        android:contentDescription="@string/mobile_player_settings"
+                        android:src="@drawable/mobile_ic_tune" />
+                </LinearLayout>
+
+                <LinearLayout
+                    android:layout_width="wrap_content"
+                    android:layout_height="wrap_content"
+                    android:layout_gravity="center"
+                    android:gravity="center_vertical"
+                    android:orientation="horizontal">
+
+                    <ImageButton
+                        android:id="@+id/mobile_previous"
+                        android:layout_width="48dp"
+                        android:layout_height="48dp"
+                        android:background="@drawable/mobile_player_circle"
+                        android:contentDescription="@string/mobile_previous"
+                        android:src="@drawable/mobile_ic_skip_prev" />
+
+                    <ImageButton
+                        android:id="@+id/mobile_play_pause"
+                        android:layout_width="64dp"
+                        android:layout_height="64dp"
+                        android:layout_marginStart="40dp"
+                        android:layout_marginEnd="40dp"
+                        android:background="@drawable/mobile_player_circle"
+                        android:contentDescription="@string/mobile_pause"
+                        android:scaleType="center"
+                        android:src="@drawable/mobile_ic_pause_big" />
+
+                    <ImageButton
+                        android:id="@+id/mobile_next"
+                        android:layout_width="48dp"
+                        android:layout_height="48dp"
+                        android:background="@drawable/mobile_player_circle"
+                        android:contentDescription="@string/mobile_next"
+                        android:src="@drawable/mobile_ic_skip_next" />
+                </LinearLayout>
+
+                <LinearLayout
+                    android:id="@+id/mobile_controls_bottom"
+                    android:layout_width="match_parent"
+                    android:layout_height="wrap_content"
+                    android:layout_gravity="bottom"
+                    android:layout_marginBottom="14dp"
+                    android:orientation="vertical"
+                    android:paddingStart="12dp"
+                    android:paddingEnd="4dp">
+
+                    <LinearLayout
+                        android:layout_width="match_parent"
+                        android:layout_height="40dp"
+                        android:gravity="center_vertical"
+                        android:orientation="horizontal">
+
+                        <TextView
+                            android:id="@+id/mobile_time"
+                            android:layout_width="0dp"
+                            android:layout_height="wrap_content"
+                            android:layout_weight="1"
+                            android:textColor="#FFFFFF"
+                            android:textSize="12sp"
+                            tools:text="4:12 / 50:13" />
+
+                        <ImageButton
+                            android:id="@+id/mobile_fullscreen"
+                            style="@style/MobilePlayerButton"
+                            android:contentDescription="@string/mobile_fullscreen"
+                            android:src="@drawable/mobile_ic_fullscreen" />
+                    </LinearLayout>
+
+                    <!-- Full screen only: quick actions under the time bar -->
+                    <HorizontalScrollView
+                        android:id="@+id/mobile_fullscreen_actions_scroll"
+                        android:layout_width="match_parent"
+                        android:layout_height="wrap_content"
+                        android:layout_marginTop="16dp"
+                        android:scrollbars="none"
+                        android:visibility="gone">
+
+                        <LinearLayout
+                            android:id="@+id/mobile_fullscreen_actions"
+                            android:layout_width="wrap_content"
+                            android:layout_height="34dp"
+                            android:orientation="horizontal" />
+                    </HorizontalScrollView>
+                </LinearLayout>
+            </FrameLayout>
+
+            <com.liskovsoft.smartyoutubetv2.tv.ui.mobile.MobileTimeBar
+                android:id="@+id/mobile_time_bar"
+                android:layout_width="match_parent"
+                android:layout_height="24dp"
+                android:layout_gravity="bottom" />
+        </FrameLayout>
+
+        <androidx.recyclerview.widget.RecyclerView
+            android:id="@+id/mobile_watch_list"
+            android:layout_width="match_parent"
+            android:layout_height="0dp"
+            android:layout_weight="1"
+            android:clipToPadding="false"
+            android:paddingBottom="8dp" />
+    </LinearLayout>
+</FrameLayout>

@@ -37,6 +37,27 @@
             android:exported="false"
             android:launchMode="singleInstance"
             android:screenOrientation="unspecified" />
+
+        <!-- Phone watch page -->
+        <activity
+            android:name="com.liskovsoft.smartyoutubetv2.tv.ui.mobile.MobilePlaybackActivity"
+            android:configChanges="screenSize|smallestScreenSize|screenLayout|orientation|layoutDirection|keyboardHidden"
+            android:exported="false"
+            android:launchMode="singleInstance"
+            android:resizeableActivity="true"
+            android:screenOrientation="unspecified"
+            android:showWhenLocked="true"
+            android:supportsPictureInPicture="true"
+            tools:targetApi="27" />
+
+        <!-- Phone search screen -->
+        <activity
+            android:name="com.liskovsoft.smartyoutubetv2.tv.ui.mobile.MobileSearchActivity"
+            android:configChanges="screenSize|smallestScreenSize|screenLayout|orientation|layoutDirection"
+            android:exported="false"
+            android:launchMode="singleInstance"
+            android:screenOrientation="unspecified"
+            android:windowSoftInputMode="adjustResize|stateHidden" />
     </application>
 
 </manifest>

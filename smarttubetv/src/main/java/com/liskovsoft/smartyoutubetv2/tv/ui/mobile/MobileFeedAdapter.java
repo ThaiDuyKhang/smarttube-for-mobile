@@ -35,6 +35,8 @@ public class MobileFeedAdapter extends RecyclerView.Adapter<RecyclerView.ViewHol
     public static final int TYPE_SHORT_PAGE = 3;
     public static final int TYPE_SETTING = 4;
     public static final int TYPE_YOU_HEADER = 5;
+    public static final int TYPE_SUGGESTION = 6;
+    public static final int TYPE_VIEW = 7;
 
     public interface Callback {
         void onVideoClicked(Video video);
@@ -43,6 +45,9 @@ public class MobileFeedAdapter extends RecyclerView.Adapter<RecyclerView.ViewHol
         void onSwitchAccountClicked();
         void onSettingsClicked();
         Account getAccount();
+        default void onSuggestionClicked(String text) {}
+        default void onSuggestionFillClicked(String text) {}
+        default void onSuggestionLongClicked(String text) {}
     }
 
     public static class Item {
@@ -82,12 +87,24 @@ public class MobileFeedAdapter extends RecyclerView.Adapter<RecyclerView.ViewHol
             return new Item(TYPE_SETTING, null, null, null, setting, makeId(TYPE_SETTING, setting));
         }
 
+        public static Item suggestion(String text, boolean isHistory) {
+            return new Item(TYPE_SUGGESTION, null, null, text, isHistory ? HISTORY_MARK : null, makeId(TYPE_SUGGESTION, text));
+        }
+
+        /**
+         * The custom view of the adapter (see {@link #setCustomView(View)}), e.g. the video details on the watch page
+         */
+        public static Item view() {
+            return new Item(TYPE_VIEW, null, null, null, null, makeId(TYPE_VIEW, TYPE_VIEW));
+        }
+
         public static Item youHeader() {
             return new Item(TYPE_YOU_HEADER, null, null, null, null, makeId(TYPE_YOU_HEADER, TYPE_YOU_HEADER));
         }
 
         private static long makeId(int type, Object owner) {
-            return ((long) type << 32) | (System.identityHashCode(owner) & 0xffffffffL);
+            int hash = owner instanceof String ? owner.hashCode() : System.identityHashCode(owner);
+            return ((long) type << 32) | (hash & 0xffffffffL);
         }
 
         /**
@@ -102,7 +119,9 @@ public class MobileFeedAdapter extends RecyclerView.Adapter<RecyclerView.ViewHol
         }
     }
 
+    private static final SettingsItem HISTORY_MARK = new SettingsItem(null, null);
     private final Callback mCallback;
+    private View mCustomView;
     private final List<Item> mItems = new ArrayList<>();
 
     public MobileFeedAdapter(Callback callback) {
@@ -114,6 +133,10 @@ public class MobileFeedAdapter extends RecyclerView.Adapter<RecyclerView.ViewHol
         mItems.clear();
         mItems.addAll(items);
         notifyDataSetChanged();
+    }
+
+    public void setCustomView(View view) {
+        mCustomView = view;
     }
 
     public List<Item> getItems() {
@@ -151,6 +174,14 @@ public class MobileFeedAdapter extends RecyclerView.Adapter<RecyclerView.ViewHol
                 return new SimpleHolder(inflater.inflate(R.layout.mobile_item_setting, parent, false));
             case TYPE_YOU_HEADER:
                 return new SimpleHolder(inflater.inflate(R.layout.mobile_item_you_header, parent, false));
+            case TYPE_SUGGESTION:
+                return new SimpleHolder(inflater.inflate(R.layout.mobile_item_suggestion, parent, false));
+            case TYPE_VIEW:
+                if (mCustomView.getParent() instanceof ViewGroup) {
+                    ((ViewGroup) mCustomView.getParent()).removeView(mCustomView);
+                }
+                mCustomView.setLayoutParams(new RecyclerView.LayoutParams(ViewGroup.LayoutParams.MATCH_PARENT, ViewGroup.LayoutParams.WRAP_CONTENT));
+                return new SimpleHolder(mCustomView);
             case TYPE_VIDEO:
             default:
                 return new SimpleHolder(inflater.inflate(R.layout.mobile_item_video, parent, false));
@@ -180,7 +211,21 @@ public class MobileFeedAdapter extends RecyclerView.Adapter<RecyclerView.ViewHol
             case TYPE_YOU_HEADER:
                 bindYouHeader(holder.itemView);
                 break;
+            case TYPE_SUGGESTION:
+                bindSuggestion(holder.itemView, item.title, item.setting == HISTORY_MARK);
+                break;
         }
+    }
+
+    private void bindSuggestion(View view, String text, boolean isHistory) {
+        ((ImageView) view.findViewById(R.id.mobile_suggestion_icon)).setImageResource(isHistory ? R.drawable.mobile_ic_history : R.drawable.mobile_ic_search);
+        ((TextView) view.findViewById(R.id.mobile_suggestion_text)).setText(text);
+        view.setOnClickListener(v -> mCallback.onSuggestionClicked(text));
+        view.setOnLongClickListener(v -> {
+            mCallback.onSuggestionLongClicked(text);
+            return true;
+        });
+        view.findViewById(R.id.mobile_suggestion_fill).setOnClickListener(v -> mCallback.onSuggestionFillClicked(text));
     }
 
     private void bindVideo(View view, Video video) {

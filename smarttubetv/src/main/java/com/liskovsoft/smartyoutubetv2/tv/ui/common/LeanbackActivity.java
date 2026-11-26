@@ -17,6 +17,7 @@ import com.liskovsoft.smartyoutubetv2.common.prefs.GeneralData;
 import com.liskovsoft.smartyoutubetv2.common.utils.Utils;
 import com.liskovsoft.smartyoutubetv2.tv.ui.browse.video.GridFragmentHelper;
 import com.liskovsoft.smartyoutubetv2.tv.ui.common.keyhandler.DoubleBackManager2;
+import com.liskovsoft.smartyoutubetv2.tv.ui.mobile.MobilePlaybackActivity;
 import com.liskovsoft.smartyoutubetv2.tv.ui.playback.PlaybackActivity;
 import com.liskovsoft.smartyoutubetv2.tv.ui.search.tags.SearchTagsActivity;
 
@@ -47,7 +48,7 @@ public abstract class LeanbackActivity extends MotherActivity {
         mBackgroundManager = new UriBackgroundManager(this);
         mModeSyncManager = ModeSyncManager.instance();
         mDoubleBackManager = new DoubleBackManager2(this);
-        mGlobalKeyTranslator = this instanceof PlaybackActivity ?
+        mGlobalKeyTranslator = this instanceof PlaybackActivity || this instanceof MobilePlaybackActivity ?
                 new PlayerKeyTranslator(this) :
                 new GlobalKeyTranslator(this);
         mGlobalKeyTranslator.apply();
@@ -116,7 +117,7 @@ public abstract class LeanbackActivity extends MotherActivity {
                     finishTheApp();
                     break;
             }
-        } else if (this instanceof PlaybackActivity) {
+        } else if (this instanceof PlaybackActivity || this instanceof MobilePlaybackActivity) {
             switch (getGeneralData().getPlayerExitShortcut()) {
                 case GeneralData.EXIT_DOUBLE_BACK:
                     mDoubleBackManager.enableDoubleBackExit(this::finishReally);

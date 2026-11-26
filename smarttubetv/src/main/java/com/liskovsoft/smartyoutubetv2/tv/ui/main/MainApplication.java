@@ -28,6 +28,8 @@ import com.liskovsoft.smartyoutubetv2.common.prefs.PlayerTweaksData;
 import com.liskovsoft.smartyoutubetv2.tv.ui.adddevice.AddDeviceActivity;
 import com.liskovsoft.smartyoutubetv2.tv.ui.browse.BrowseActivity;
 import com.liskovsoft.smartyoutubetv2.tv.ui.mobile.MobileBrowseActivity;
+import com.liskovsoft.smartyoutubetv2.tv.ui.mobile.MobileSearchActivity;
+import com.liskovsoft.smartyoutubetv2.tv.ui.mobile.MobilePlaybackActivity;
 import com.liskovsoft.smartyoutubetv2.common.utils.Utils;
 import com.liskovsoft.smartyoutubetv2.tv.ui.channel.ChannelActivity;
 import com.liskovsoft.smartyoutubetv2.tv.ui.channeluploads.ChannelUploadsActivity;
@@ -112,9 +114,9 @@ public class MainApplication extends MultiDexApplication implements Configuratio
         viewManager.setRoot(browseClass);
         viewManager.register(SplashView.class, SplashActivity.class); // no parent, because it's root activity
         viewManager.register(BrowseView.class, browseClass); // no parent, because it's root activity
-        viewManager.register(PlaybackView.class, PlaybackActivity.class, browseClass);
+        viewManager.register(PlaybackView.class, Utils.isMobileBuild(this) ? MobilePlaybackActivity.class : PlaybackActivity.class, browseClass);
         viewManager.register(AppDialogView.class, dialogClass, browseClass);
-        viewManager.register(SearchView.class, SearchTagsActivity.class, browseClass);
+        viewManager.register(SearchView.class, Utils.isMobileBuild(this) ? MobileSearchActivity.class : SearchTagsActivity.class, browseClass);
         viewManager.register(SignInView.class, SignInActivity.class, browseClass);
         viewManager.register(AddDeviceView.class, AddDeviceActivity.class, browseClass);
         viewManager.register(ChannelView.class, ChannelActivity.class, browseClass);

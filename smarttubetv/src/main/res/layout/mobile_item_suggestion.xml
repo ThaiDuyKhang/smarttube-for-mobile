@@ -1,0 +1,35 @@
+<?xml version="1.0" encoding="utf-8"?>
+<!-- Mobile build: search suggestion / history row -->
+<LinearLayout xmlns:android="http://schemas.android.com/apk/res/android"
+    android:layout_width="match_parent"
+    android:layout_height="52dp"
+    android:background="?android:attr/selectableItemBackground"
+    android:gravity="center_vertical"
+    android:orientation="horizontal"
+    android:paddingStart="16dp">
+
+    <ImageView
+        android:id="@+id/mobile_suggestion_icon"
+        android:layout_width="24dp"
+        android:layout_height="24dp"
+        android:importantForAccessibility="no" />
+
+    <TextView
+        android:id="@+id/mobile_suggestion_text"
+        android:layout_width="0dp"
+        android:layout_height="wrap_content"
+        android:layout_marginStart="20dp"
+        android:layout_weight="1"
+        android:ellipsize="end"
+        android:maxLines="1"
+        android:textColor="@color/mobile_text"
+        android:textSize="16sp" />
+
+    <ImageButton
+        android:id="@+id/mobile_suggestion_fill"
+        android:layout_width="52dp"
+        android:layout_height="52dp"
+        android:background="?android:attr/selectableItemBackground"
+        android:contentDescription="@string/mobile_fill_query"
+        android:src="@drawable/mobile_ic_arrow_fill" />
+</LinearLayout>
