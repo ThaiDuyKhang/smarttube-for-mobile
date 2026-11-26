@@ -1,0 +1,91 @@
+<?xml version="1.0" encoding="utf-8"?>
+<!-- Mobile build: full width video card -->
+<LinearLayout xmlns:android="http://schemas.android.com/apk/res/android"
+    android:layout_width="match_parent"
+    android:layout_height="wrap_content"
+    android:background="?android:attr/selectableItemBackground"
+    android:orientation="vertical"
+    android:paddingBottom="20dp">
+
+    <FrameLayout
+        android:id="@+id/mobile_thumb_frame"
+        android:layout_width="match_parent"
+        android:layout_height="wrap_content">
+
+        <com.liskovsoft.smartyoutubetv2.tv.ui.mobile.AspectRatioImageView
+            android:id="@+id/mobile_thumb"
+            android:layout_width="match_parent"
+            android:layout_height="wrap_content"
+            android:background="@color/mobile_thumb_placeholder"
+            android:importantForAccessibility="no"
+            android:scaleType="centerCrop" />
+
+        <TextView
+            android:id="@+id/mobile_badge"
+            android:layout_width="wrap_content"
+            android:layout_height="wrap_content"
+            android:layout_gravity="bottom|end"
+            android:layout_margin="8dp"
+            android:background="@drawable/mobile_badge_bg"
+            android:paddingStart="4dp"
+            android:paddingTop="1dp"
+            android:paddingEnd="4dp"
+            android:paddingBottom="1dp"
+            android:textColor="#FFFFFF"
+            android:textSize="12sp"
+            android:textStyle="bold" />
+
+        <ProgressBar
+            android:id="@+id/mobile_watched"
+            style="?android:attr/progressBarStyleHorizontal"
+            android:layout_width="match_parent"
+            android:layout_height="3dp"
+            android:layout_gravity="bottom"
+            android:max="100"
+            android:progressDrawable="@drawable/mobile_watched_progress" />
+    </FrameLayout>
+
+    <LinearLayout
+        android:layout_width="match_parent"
+        android:layout_height="wrap_content"
+        android:orientation="horizontal"
+        android:paddingStart="12dp"
+        android:paddingTop="12dp">
+
+        <LinearLayout
+            android:layout_width="0dp"
+            android:layout_height="wrap_content"
+            android:layout_weight="1"
+            android:orientation="vertical">
+
+            <TextView
+                android:id="@+id/mobile_video_title"
+                android:layout_width="match_parent"
+                android:layout_height="wrap_content"
+                android:ellipsize="end"
+                android:lineSpacingExtra="2dp"
+                android:maxLines="2"
+                android:textColor="@color/mobile_text"
+                android:textSize="16sp" />
+
+            <TextView
+                android:id="@+id/mobile_video_meta"
+                android:layout_width="match_parent"
+                android:layout_height="wrap_content"
+                android:layout_marginTop="4dp"
+                android:ellipsize="end"
+                android:maxLines="2"
+                android:textColor="@color/mobile_text_secondary"
+                android:textSize="12sp" />
+        </LinearLayout>
+
+        <ImageButton
+            android:id="@+id/mobile_video_more"
+            android:layout_width="40dp"
+            android:layout_height="40dp"
+            android:layout_marginEnd="4dp"
+            android:background="?android:attr/selectableItemBackground"
+            android:contentDescription="@string/mobile_more_options"
+            android:src="@drawable/mobile_ic_more_vert" />
+    </LinearLayout>
+</LinearLayout>

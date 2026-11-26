@@ -5,6 +5,7 @@ import android.content.Context;
 import android.content.Intent;
 import android.content.pm.ActivityInfo;
 import android.content.res.Configuration;
+import android.content.res.Resources;
 import android.os.Build.VERSION;
 import android.os.Bundle;
 import android.util.DisplayMetrics;
@@ -37,6 +38,7 @@ import com.r0adkll.slidr.model.SlidrPosition;
 
 import java.util.ArrayList;
 import java.util.List;
+import java.util.Locale;
 
 public class MotherActivity extends FragmentActivity {
     private static final String TAG = MotherActivity.class.getSimpleName();
@@ -81,13 +83,14 @@ public class MotherActivity extends FragmentActivity {
         Log.d(TAG, "Starting %s...", this.getClass().getSimpleName());
 
         mIsOculusQuestFixEnabled = PlayerTweaksData.instance(this).isOculusQuestFixEnabled();
-        mIsFullscreenModeEnabled = GeneralData.instance(this).isFullscreenModeEnabled();
+        // Native (phone) UI keeps the system bars, like other phone apps
+        mIsFullscreenModeEnabled = !isNativeUi() && GeneralData.instance(this).isFullscreenModeEnabled();
 
         initDpi();
         initTheme();
 
         // Search Fullscreen routine inside onPause() method
-        if (!mIsFullscreenModeEnabled) {
+        if (!mIsFullscreenModeEnabled && !isNativeUi()) {
             // There's no way to do this programmatically!
             setTheme(R.style.FitSystemWindows);
 
@@ -104,7 +107,7 @@ public class MotherActivity extends FragmentActivity {
 
         mScreensaverManager = new ScreensaverManager(this); // moved below the theme to fix side effects
 
-        if (Utils.isMobileBuild(this)) {
+        if (Utils.isMobileBuild(this) && !isNativeUi()) {
             mSingleTapClickHelper = new SingleTapClickHelper(this);
         }
 
@@ -213,8 +216,28 @@ public class MotherActivity extends FragmentActivity {
         }
     }
 
+    /**
+     * Mobile build: the screen is made for the phone (not the TV UI).<br/>
+     * It uses the system density, keeps the system bars and its own theme.
+     */
+    public boolean isNativeUi() {
+        return false;
+    }
+
     @Override
     protected void attachBaseContext(Context context) {
+        if (context != null && isNativeUi()) {
+            // Own configuration (resources) with the system density. The TV screens change the density of the shared one.
+            Configuration config = new Configuration(context.getResources().getConfiguration());
+            config.densityDpi = Resources.getSystem().getDisplayMetrics().densityDpi;
+            Locale locale = LocaleUpdater.getSavedLocale(context);
+            if (locale != null) {
+                config.setLocale(locale);
+            }
+            super.attachBaseContext(context.createConfigurationContext(config));
+            return;
+        }
+
         Context contextWrapper = null;
 
         if (context != null) {
@@ -281,6 +304,10 @@ public class MotherActivity extends FragmentActivity {
     }
 
     private void initDpi() {
+        if (isNativeUi()) {
+            return;
+        }
+
         getResources().getDisplayMetrics().setTo(getDisplayMetrics(this));
     }
 

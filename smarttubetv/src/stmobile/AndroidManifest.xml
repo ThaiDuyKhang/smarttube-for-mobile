@@ -29,4 +29,14 @@
         android:name="android.hardware.wifi"
         android:required="false" />
 
+    <application>
+        <!-- Phone main screen (see MainApplication: registered instead of the TV one) -->
+        <activity
+            android:name="com.liskovsoft.smartyoutubetv2.tv.ui.mobile.MobileBrowseActivity"
+            android:configChanges="screenSize|smallestScreenSize|screenLayout|orientation|layoutDirection"
+            android:exported="false"
+            android:launchMode="singleInstance"
+            android:screenOrientation="unspecified" />
+    </application>
+
 </manifest>

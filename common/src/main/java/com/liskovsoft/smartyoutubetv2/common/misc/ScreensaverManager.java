@@ -35,6 +35,7 @@ public class ScreensaverManager {
     private int mMode = MODE_SCREENSAVER;
     private boolean mIsScreenOff;
     private boolean mIsBlocked;
+    private boolean mIsNativeUi;
     // Distinct from mIsBlocked: lifecycle suspension stops all screensaver management while
     // the host activity is not in the foreground. Blocked only suppresses user-facing dimming.
     private boolean mIsSuspended;
@@ -54,6 +55,9 @@ public class ScreensaverManager {
 
     public ScreensaverManager(Activity activity) {
         mActivity = new WeakReference<>(activity);
+        // Mobile build: the phone screens use the system screen timeout (no dimming, don't keep the screen on)
+        mIsNativeUi = activity instanceof MotherActivity && ((MotherActivity) activity).isNativeUi();
+        mIsBlocked = mIsNativeUi;
         mDimContainer = new WeakReference<>(createDimContainer(activity));
         enable();
         addToRegistry();
@@ -144,6 +148,10 @@ public class ScreensaverManager {
     }
 
     public void doScreenOff() {
+        if (mIsNativeUi) {
+            return;
+        }
+
         // Ignore suspend if dialog is opened to apply settings immediately
         if (mIsSuspended && !getAppDialogPresenter().isDialogShown()) {
             return;
@@ -177,7 +185,8 @@ public class ScreensaverManager {
     public void resume() {
         mIsSuspended = false;
         enable();
-        if (mIsBlocked) {
+        // Mobile build: the phone screens use the system screen timeout
+        if (mIsBlocked && !mIsNativeUi) {
             disableSystemScreensaver();
         }
     }
@@ -196,7 +205,7 @@ public class ScreensaverManager {
     }
 
     public void setBlocked(boolean blocked) {
-        mIsBlocked = blocked;
+        mIsBlocked = blocked || mIsNativeUi;
     }
 
     private void enableTimeout() {

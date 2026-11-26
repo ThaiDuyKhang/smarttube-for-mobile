@@ -1,0 +1,47 @@
+<?xml version="1.0" encoding="utf-8"?>
+<!-- Mobile build: short card inside the shelf -->
+<LinearLayout xmlns:android="http://schemas.android.com/apk/res/android"
+    android:id="@+id/mobile_short_card"
+    android:layout_width="wrap_content"
+    android:layout_height="wrap_content"
+    android:layout_marginEnd="8dp"
+    android:orientation="vertical">
+
+    <FrameLayout
+        android:id="@+id/mobile_short_frame"
+        android:layout_width="match_parent"
+        android:layout_height="wrap_content"
+        android:background="@drawable/mobile_card_round">
+
+        <com.liskovsoft.smartyoutubetv2.tv.ui.mobile.AspectRatioImageView
+            android:id="@+id/mobile_short_thumb"
+            android:layout_width="match_parent"
+            android:layout_height="wrap_content"
+            android:importantForAccessibility="no"
+            android:scaleType="centerCrop" />
+
+        <TextView
+            android:id="@+id/mobile_short_title"
+            android:layout_width="match_parent"
+            android:layout_height="wrap_content"
+            android:layout_gravity="bottom"
+            android:ellipsize="end"
+            android:maxLines="2"
+            android:padding="8dp"
+            android:shadowColor="#CC000000"
+            android:shadowRadius="4"
+            android:textColor="#FFFFFF"
+            android:textSize="14sp"
+            android:textStyle="bold" />
+    </FrameLayout>
+
+    <TextView
+        android:id="@+id/mobile_short_meta"
+        android:layout_width="match_parent"
+        android:layout_height="wrap_content"
+        android:layout_marginTop="6dp"
+        android:ellipsize="end"
+        android:maxLines="1"
+        android:textColor="@color/mobile_text_secondary"
+        android:textSize="12sp" />
+</LinearLayout>

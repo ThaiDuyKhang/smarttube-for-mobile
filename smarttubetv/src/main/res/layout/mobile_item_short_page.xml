@@ -1,0 +1,76 @@
+<?xml version="1.0" encoding="utf-8"?>
+<!-- Mobile build: full screen page of the Shorts tab -->
+<FrameLayout xmlns:android="http://schemas.android.com/apk/res/android"
+    android:layout_width="match_parent"
+    android:layout_height="match_parent"
+    android:background="#000000">
+
+    <ImageView
+        android:id="@+id/mobile_page_thumb"
+        android:layout_width="match_parent"
+        android:layout_height="match_parent"
+        android:importantForAccessibility="no"
+        android:scaleType="centerCrop" />
+
+    <ImageView
+        android:id="@+id/mobile_page_play"
+        android:layout_width="72dp"
+        android:layout_height="72dp"
+        android:layout_gravity="center"
+        android:background="@drawable/mobile_circle_dark"
+        android:importantForAccessibility="no"
+        android:padding="18dp"
+        android:src="@drawable/mobile_ic_play" />
+
+    <LinearLayout
+        android:layout_width="wrap_content"
+        android:layout_height="wrap_content"
+        android:layout_gravity="bottom|end"
+        android:layout_marginEnd="6dp"
+        android:layout_marginBottom="24dp"
+        android:gravity="center_horizontal"
+        android:orientation="vertical">
+
+        <ImageButton
+            android:id="@+id/mobile_page_more"
+            android:layout_width="48dp"
+            android:layout_height="48dp"
+            android:background="@drawable/mobile_circle_dark"
+            android:contentDescription="@string/mobile_more_options"
+            android:src="@drawable/mobile_ic_more_vert" />
+    </LinearLayout>
+
+    <LinearLayout
+        android:layout_width="match_parent"
+        android:layout_height="wrap_content"
+        android:layout_gravity="bottom"
+        android:layout_marginEnd="72dp"
+        android:orientation="vertical"
+        android:paddingStart="12dp"
+        android:paddingBottom="24dp">
+
+        <TextView
+            android:id="@+id/mobile_page_author"
+            android:layout_width="wrap_content"
+            android:layout_height="wrap_content"
+            android:ellipsize="end"
+            android:maxLines="1"
+            android:shadowColor="#CC000000"
+            android:shadowRadius="4"
+            android:textColor="#FFFFFF"
+            android:textSize="15sp"
+            android:textStyle="bold" />
+
+        <TextView
+            android:id="@+id/mobile_page_title"
+            android:layout_width="match_parent"
+            android:layout_height="wrap_content"
+            android:layout_marginTop="8dp"
+            android:ellipsize="end"
+            android:maxLines="2"
+            android:shadowColor="#CC000000"
+            android:shadowRadius="4"
+            android:textColor="#FFFFFF"
+            android:textSize="15sp" />
+    </LinearLayout>
+</FrameLayout>

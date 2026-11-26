@@ -1,0 +1,229 @@
+<?xml version="1.0" encoding="utf-8"?>
+<!-- Mobile build: main screen (home, shorts, subscriptions, you) -->
+<FrameLayout xmlns:android="http://schemas.android.com/apk/res/android"
+    xmlns:tools="http://schemas.android.com/tools"
+    android:id="@+id/mobile_root"
+    android:layout_width="match_parent"
+    android:layout_height="match_parent"
+    android:background="@color/mobile_bg">
+
+    <LinearLayout
+        android:layout_width="match_parent"
+        android:layout_height="match_parent"
+        android:orientation="vertical">
+
+        <LinearLayout
+            android:id="@+id/mobile_top_bar"
+            android:layout_width="match_parent"
+            android:layout_height="56dp"
+            android:gravity="center_vertical"
+            android:orientation="horizontal"
+            android:paddingStart="16dp"
+            android:paddingEnd="4dp">
+
+            <TextView
+                android:layout_width="30dp"
+                android:layout_height="22dp"
+                android:background="@drawable/mobile_logo_bg"
+                android:gravity="center"
+                android:text="S"
+                android:textColor="#FFFFFF"
+                android:textSize="15sp"
+                android:textStyle="bold"
+                tools:ignore="HardcodedText" />
+
+            <TextView
+                android:id="@+id/mobile_title"
+                android:layout_width="0dp"
+                android:layout_height="wrap_content"
+                android:layout_marginStart="6dp"
+                android:layout_weight="1"
+                android:text="@string/mobile_app_title"
+                android:textColor="@color/mobile_text"
+                android:textSize="19sp"
+                android:textStyle="bold" />
+
+            <ImageButton
+                android:id="@+id/mobile_notifications"
+                android:layout_width="48dp"
+                android:layout_height="48dp"
+                android:background="?android:attr/selectableItemBackground"
+                android:contentDescription="@string/mobile_notifications"
+                android:src="@drawable/mobile_ic_bell" />
+
+            <ImageButton
+                android:id="@+id/mobile_search"
+                android:layout_width="48dp"
+                android:layout_height="48dp"
+                android:background="?android:attr/selectableItemBackground"
+                android:contentDescription="@string/mobile_search"
+                android:src="@drawable/mobile_ic_search" />
+
+            <ImageButton
+                android:id="@+id/mobile_settings"
+                android:layout_width="48dp"
+                android:layout_height="48dp"
+                android:background="?android:attr/selectableItemBackground"
+                android:contentDescription="@string/mobile_settings"
+                android:src="@drawable/mobile_ic_settings"
+                android:visibility="gone" />
+        </LinearLayout>
+
+        <HorizontalScrollView
+            android:id="@+id/mobile_chips_scroll"
+            android:layout_width="match_parent"
+            android:layout_height="48dp"
+            android:scrollbars="none">
+
+            <LinearLayout
+                android:id="@+id/mobile_chips"
+                android:layout_width="wrap_content"
+                android:layout_height="match_parent"
+                android:gravity="center_vertical"
+                android:orientation="horizontal"
+                android:paddingStart="12dp"
+                android:paddingEnd="12dp">
+
+                <ImageButton
+                    android:id="@+id/mobile_explore"
+                    android:layout_width="48dp"
+                    android:layout_height="32dp"
+                    android:background="@drawable/mobile_chip_bg"
+                    android:contentDescription="@string/mobile_explore"
+                    android:scaleType="center"
+                    android:src="@drawable/mobile_ic_compass" />
+            </LinearLayout>
+        </HorizontalScrollView>
+
+        <FrameLayout
+            android:layout_width="match_parent"
+            android:layout_height="0dp"
+            android:layout_weight="1">
+
+            <androidx.recyclerview.widget.RecyclerView
+                android:id="@+id/mobile_feed"
+                android:layout_width="match_parent"
+                android:layout_height="match_parent"
+                android:clipToPadding="false"
+                android:paddingBottom="8dp" />
+
+            <LinearLayout
+                android:id="@+id/mobile_error"
+                android:layout_width="match_parent"
+                android:layout_height="match_parent"
+                android:gravity="center"
+                android:orientation="vertical"
+                android:padding="32dp"
+                android:visibility="gone">
+
+                <TextView
+                    android:id="@+id/mobile_error_message"
+                    android:layout_width="wrap_content"
+                    android:layout_height="wrap_content"
+                    android:gravity="center"
+                    android:textColor="@color/mobile_text_secondary"
+                    android:textSize="15sp" />
+
+                <Button
+                    android:id="@+id/mobile_error_action"
+                    android:layout_width="wrap_content"
+                    android:layout_height="40dp"
+                    android:layout_marginTop="16dp"
+                    android:background="@drawable/mobile_round_button_light"
+                    android:paddingStart="20dp"
+                    android:paddingEnd="20dp"
+                    android:textAllCaps="false"
+                    android:textColor="@color/mobile_text_on_light"
+                    android:textSize="14sp" />
+            </LinearLayout>
+
+            <ProgressBar
+                android:id="@+id/mobile_progress"
+                android:layout_width="40dp"
+                android:layout_height="40dp"
+                android:layout_gravity="center"
+                android:visibility="gone" />
+        </FrameLayout>
+
+        <View
+            android:id="@+id/mobile_bottom_divider"
+            android:layout_width="match_parent"
+            android:layout_height="1dp"
+            android:background="@color/mobile_divider" />
+
+        <LinearLayout
+            android:id="@+id/mobile_bottom_nav"
+            android:layout_width="match_parent"
+            android:layout_height="56dp"
+            android:background="@color/mobile_bg"
+            android:orientation="horizontal" />
+    </LinearLayout>
+
+    <View
+        android:id="@+id/mobile_drawer_scrim"
+        android:layout_width="match_parent"
+        android:layout_height="match_parent"
+        android:background="@color/mobile_scrim"
+        android:clickable="true"
+        android:focusable="true"
+        android:visibility="gone" />
+
+    <LinearLayout
+        android:id="@+id/mobile_drawer"
+        android:layout_width="304dp"
+        android:layout_height="match_parent"
+        android:background="@color/mobile_surface"
+        android:clickable="true"
+        android:focusable="true"
+        android:orientation="vertical"
+        android:visibility="gone">
+
+        <LinearLayout
+            android:layout_width="match_parent"
+            android:layout_height="64dp"
+            android:gravity="center_vertical"
+            android:orientation="horizontal"
+            android:paddingStart="20dp">
+
+            <TextView
+                android:layout_width="30dp"
+                android:layout_height="22dp"
+                android:background="@drawable/mobile_logo_bg"
+                android:gravity="center"
+                android:text="S"
+                android:textColor="#FFFFFF"
+                android:textSize="15sp"
+                android:textStyle="bold"
+                tools:ignore="HardcodedText" />
+
+            <TextView
+                android:layout_width="wrap_content"
+                android:layout_height="wrap_content"
+                android:layout_marginStart="8dp"
+                android:text="@string/mobile_app_title"
+                android:textColor="@color/mobile_text"
+                android:textSize="19sp"
+                android:textStyle="bold" />
+        </LinearLayout>
+
+        <ScrollView
+            android:layout_width="match_parent"
+            android:layout_height="0dp"
+            android:layout_weight="1">
+
+            <LinearLayout
+                android:id="@+id/mobile_drawer_items"
+                android:layout_width="match_parent"
+                android:layout_height="wrap_content"
+                android:orientation="vertical" />
+        </ScrollView>
+
+        <TextView
+            android:id="@+id/mobile_drawer_footer"
+            android:layout_width="match_parent"
+            android:layout_height="wrap_content"
+            android:padding="16dp"
+            android:textColor="@color/mobile_text_secondary"
+            android:textSize="12sp" />
+    </LinearLayout>
+</FrameLayout>
