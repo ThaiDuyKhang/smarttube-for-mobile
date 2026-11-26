@@ -126,6 +126,7 @@ public class MobilePlaybackActivity extends MobileActivity implements PlaybackVi
     private int mLastHeight;
     private boolean mIsDescriptionShown;
     private boolean mIsAutoplayPending;
+    private long mPipExitTimeMs;
     private boolean mIsPausedByUser;
 
     private final Runnable mHideControls = () -> setControlsShown(false);
@@ -198,6 +199,7 @@ public class MobilePlaybackActivity extends MobileActivity implements PlaybackVi
         mPresenter.onViewResumed();
 
         blockEngine(false); // reset bg mode
+        mPipExitTimeMs = 0; // expanded from the small window (not closed)
         mHandler.post(mUpdateProgress);
         applyLayout();
     }
@@ -208,6 +210,11 @@ public class MobilePlaybackActivity extends MobileActivity implements PlaybackVi
         boolean isScreenOff = getPlayerData().getBackgroundMode() != PlayerData.BACKGROUND_MODE_DEFAULT && Utils.isHardScreenOff(this);
 
         if (hasDialogBug || isScreenOff) {
+            blockEngine(true);
+        }
+
+        // Switching apps with a gesture (no onUserLeaveHint): keep playing in the background like Home does
+        if (!isFinishing() && !isInPipMode() && isBackgroundPlayEnabled() && mPlayer != null && getPlayWhenReady() && containsMedia()) {
             blockEngine(true);
         }
 
@@ -226,6 +233,18 @@ public class MobilePlaybackActivity extends MobileActivity implements PlaybackVi
     @Override
     protected void onStop() {
         super.onStop();
+
+        // The PIP window has just been closed: the video stops (it isn't brought back to the screen)
+        if (android.os.SystemClock.uptimeMillis() - mPipExitTimeMs < 2_000 && !isInPipMode() && !isFinishing()) {
+            mPipExitTimeMs = 0;
+            if (mPlayer != null && getPlayWhenReady()) {
+                setPlayWhenReady(false);
+                mPresenter.onPauseClicked();
+            }
+            blockEngine(false);
+            getViewManager().blockTop(null);
+            MobilePlaybackService.stop(this);
+        }
 
         if (Util.SDK_INT > 23) {
             maybeReleasePlayer();
@@ -266,7 +285,14 @@ public class MobilePlaybackActivity extends MobileActivity implements PlaybackVi
     public void finish() {
         Log.d(TAG, "Finishing activity...");
 
-        // Back, minimize, swipe down: the video stops, like the YouTube app.
+        // Back on a video (not a short): it goes on in a small window (PIP), like the YouTube app
+        if (canAutoPip()) {
+            enterPip();
+            getViewManager().startParentView(this);
+            return;
+        }
+
+        // Back on a short (or no PIP on this device), minimize, swipe down: the video stops.
         // Background play is only for the screen off and other apps (see onPause, onUserLeaveHint).
         // The picture-in-picture button (engine blocked) and the PIP background mode keep the old behavior.
         boolean isPipRequested = isEngineBlocked() || isInPipMode() || getPlayerData().getBackgroundMode() == PlayerData.BACKGROUND_MODE_PIP;
@@ -322,7 +348,17 @@ public class MobilePlaybackActivity extends MobileActivity implements PlaybackVi
      */
     @Override
     public void onUserLeaveHint() {
-        if (isBackPressed() || isFinishing() || getViewManager().isNewViewPending() || getGeneralData().getBackgroundPlaybackShortcut() == GeneralData.BACKGROUND_PLAYBACK_SHORTCUT_BACK) {
+        if (isBackPressed() || isFinishing() || getViewManager().isNewViewPending()) {
+            return;
+        }
+
+        // Home, recent apps: a video goes on in a small window
+        if (canAutoPip()) {
+            enterPip();
+            return;
+        }
+
+        if (getGeneralData().getBackgroundPlaybackShortcut() == GeneralData.BACKGROUND_PLAYBACK_SHORTCUT_BACK) {
             return;
         }
 
@@ -348,6 +384,11 @@ public class MobilePlaybackActivity extends MobileActivity implements PlaybackVi
     public void onPictureInPictureModeChanged(boolean isInPictureInPictureMode) {
         super.onPictureInPictureModeChanged(isInPictureInPictureMode);
 
+        if (!isInPictureInPictureMode) {
+            // Closed (X, swiped away) or expanded: onStop tells which one
+            mPipExitTimeMs = android.os.SystemClock.uptimeMillis();
+        }
+
         // PIP window: the video only
         showControls(false);
         applyLayout();
@@ -372,6 +413,58 @@ public class MobilePlaybackActivity extends MobileActivity implements PlaybackVi
 
     public boolean isInPipMode() {
         return Build.VERSION.SDK_INT >= 24 && isInPictureInPictureMode();
+    }
+
+    /**
+     * A video (not a short) is playing and the device can show it in a small window
+     */
+    private boolean canAutoPip() {
+        return !mIsShorts && !isInPipMode() && Helpers.isPictureInPictureSupported(this)
+                && mPlayer != null && containsMedia() && getPlayWhenReady();
+    }
+
+    private void enterPip() {
+        blockEngine(true); // keep the engine for the small window
+        getViewManager().blockTop(this);
+
+        try {
+            if (Build.VERSION.SDK_INT >= 26) {
+                enterPictureInPictureMode(createPipParams(false));
+            } else if (Build.VERSION.SDK_INT >= 24) {
+                enterPictureInPictureMode();
+            }
+        } catch (Exception e) {
+            Log.e(TAG, "Can't enter PIP: %s", e.getMessage());
+        }
+    }
+
+    /**
+     * Android 12+: goes to the small window by itself with the home gesture while a video plays
+     */
+    private void updateAutoPip() {
+        if (Build.VERSION.SDK_INT >= 31 && Helpers.isPictureInPictureSupported(this)) {
+            try {
+                setPictureInPictureParams(createPipParams(canAutoPip()));
+            } catch (Exception e) {
+                Log.e(TAG, "Can't set PIP params: %s", e.getMessage());
+            }
+        }
+    }
+
+    @TargetApi(26)
+    private PictureInPictureParams createPipParams(boolean autoEnter) {
+        PictureInPictureParams.Builder builder = new PictureInPictureParams.Builder();
+        com.google.android.exoplayer2.Format format = mPlayer != null ? mPlayer.getVideoFormat() : null;
+        if (format != null && format.width > 0 && format.height > 0) {
+            // Android accepts 1:2.39 .. 2.39:1
+            float ratio = Math.max(0.42f, Math.min(2.39f, (float) format.width / format.height));
+            builder.setAspectRatio(new android.util.Rational(Math.round(ratio * 1000), 1000));
+        }
+        if (Build.VERSION.SDK_INT >= 31) {
+            builder.setAutoEnterEnabled(autoEnter);
+            builder.setSeamlessResizeEnabled(true);
+        }
+        return builder.build();
     }
 
     private boolean skipPip() {
@@ -1114,6 +1207,7 @@ public class MobilePlaybackActivity extends MobileActivity implements PlaybackVi
 
                 updatePlayPause();
                 updatePlaybackService();
+                updateAutoPip();
 
                 if (playbackState == Player.STATE_ENDED) {
                     showControls(true);
