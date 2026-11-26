@@ -266,6 +266,26 @@ public class MobilePlaybackActivity extends MobileActivity implements PlaybackVi
     public void finish() {
         Log.d(TAG, "Finishing activity...");
 
+        // Back, minimize, swipe down: the video stops, like the YouTube app.
+        // Background play is only for the screen off and other apps (see onPause, onUserLeaveHint).
+        // The picture-in-picture button (engine blocked) and the PIP background mode keep the old behavior.
+        boolean isPipRequested = isEngineBlocked() || isInPipMode() || getPlayerData().getBackgroundMode() == PlayerData.BACKGROUND_MODE_PIP;
+        if (!isPipRequested) {
+            if (mPlayer != null && getPlayWhenReady()) {
+                setPlayWhenReady(false);
+                mPresenter.onPauseClicked();
+            }
+            MobilePlaybackService.stop(this);
+
+            if (getPlayerTweaksData().isKeepFinishedActivityEnabled()) {
+                getViewManager().startParentView(this);
+                maybeReleasePlayer();
+            } else {
+                super.finish();
+            }
+            return;
+        }
+
         if (!skipPip()) {
             enterPipMode(); // NOTE: without this call app will hangs when pressing on PIP button
         }
