@@ -143,6 +143,11 @@ public class AboutSettingsPresenter extends BasePresenter<Void> {
     private void appendMobileLinks(AppDialogPresenter settingsPresenter) {
         String repo = "https://github.com/ThaiDuyKhang/smarttube-for-mobile";
 
+        settingsPresenter.appendSingleButton(UiOptionItem.from(getContext().getString(R.string.mobile_check_updates), option -> {
+            settingsPresenter.closeDialog();
+            com.liskovsoft.smartyoutubetv2.common.misc.AppDataSourceManager.startMobileUpdates(getContext());
+        }));
+
         settingsPresenter.appendSingleButton(UiOptionItem.from(getContext().getString(R.string.mobile_donate_title), option -> {
             settingsPresenter.closeDialog();
             android.content.Intent intent = new android.content.Intent();

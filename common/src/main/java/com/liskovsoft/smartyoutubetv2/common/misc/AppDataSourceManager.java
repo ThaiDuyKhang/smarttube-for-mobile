@@ -38,8 +38,21 @@ public class AppDataSourceManager {
         return sInstance;
     }
 
+    public static void startMobileUpdates(Context context) {
+        android.content.Intent intent = new android.content.Intent();
+        intent.setClassName(context, "com.liskovsoft.smartyoutubetv2.tv.ui.mobile.MobileUpdateActivity");
+        intent.addFlags(android.content.Intent.FLAG_ACTIVITY_NEW_TASK);
+        context.startActivity(intent);
+    }
+
     public List<SettingsItem> getSettingItems(Context context) {
         List<SettingsItem> settingItems = new ArrayList<>();
+
+        if (Utils.isMobileBuild(context)) {
+            // Phones: update from the GitHub releases without downloading the APK by hand
+            settingItems.add(new SettingsItem(context.getString(R.string.mobile_check_updates),
+                    () -> startMobileUpdates(context), R.drawable.settings_update));
+        }
 
         settingItems.add(new SettingsItem(
                 context.getString(R.string.settings_accounts), () -> AccountSettingsPresenter.instance(context).show(), R.drawable.settings_account));

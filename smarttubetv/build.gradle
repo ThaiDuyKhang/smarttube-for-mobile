@@ -182,6 +182,12 @@ android {
             applicationId "app.smarttube.mobile"
             minSdkVersion 21
             targetSdkVersion project.properties.compileSdkVersion
+            // Release tag (v32.83-mobile.N) of the GitHub Actions build: the in-app updater compares it with the latest release.
+            // Every release gets a higher version code, so Android installs it over the previous one.
+            def releaseTag = System.getenv("GITHUB_REF_TYPE") == "tag" ? (System.getenv("GITHUB_REF_NAME") ?: "") : ""
+            def releaseNum = (releaseTag =~ /mobile\.(\d+)$/) ? (releaseTag =~ /mobile\.(\d+)$/)[0][1].toInteger() : 0
+            versionCode 247300 + releaseNum
+            resValue "string", "mobile_release_tag", releaseTag
             // Submodules (youtubeapi, appupdatechecker2) don't declare this flavor
             matchingFallbacks = ['stbeta']
 

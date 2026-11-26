@@ -86,4 +86,21 @@
     <string name="mobile_account_copied">Account number copied</string>
     <string name="mobile_source_code">Source code</string>
     <string name="mobile_version">Version %s</string>
+    <string name="mobile_update_title">App updates</string>
+    <string name="mobile_check_updates">Check for updates</string>
+    <string name="mobile_update_current">Installed version: %s</string>
+    <string name="mobile_update_checking">Checking for updates…</string>
+    <string name="mobile_update_latest">You have the latest version</string>
+    <string name="mobile_update_available">New version: %s</string>
+    <string name="mobile_update_download">Download and install (%s)</string>
+    <string name="mobile_update_downloading">Downloading… %d%%</string>
+    <string name="mobile_update_verifying">Checking the file…</string>
+    <string name="mobile_update_install">Install</string>
+    <string name="mobile_update_error">Couldn\'t check for updates. Check your connection and try again.</string>
+    <string name="mobile_update_download_error">The download failed. Try again.</string>
+    <string name="mobile_update_corrupted">The downloaded file is damaged. Try again.</string>
+    <string name="mobile_update_notes">What\'s new</string>
+    <string name="mobile_update_permission">Allow SmartTube to install apps (only used for its own updates), then come back.</string>
+    <string name="mobile_update_dev">test build</string>
+    <string name="mobile_update_open_page">Open the release page</string>
 </resources>

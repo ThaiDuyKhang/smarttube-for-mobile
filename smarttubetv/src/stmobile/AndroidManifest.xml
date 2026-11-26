@@ -38,9 +38,8 @@
     <uses-permission android:name="android.permission.FOREGROUND_SERVICE_MEDIA_PLAYBACK" />
     <uses-permission android:name="android.permission.POST_NOTIFICATIONS" />
 
-    <!-- Phones: no TV-only or risky permissions (installing apps, drawing over other apps, starting on boot,
+    <!-- Phones: no TV-only or risky permissions (deleting apps, drawing over other apps, starting on boot,
          recording audio: voice search uses the system speech screen). Fewer Play Protect warnings. -->
-    <uses-permission android:name="android.permission.REQUEST_INSTALL_PACKAGES" tools:node="remove" />
     <uses-permission android:name="android.permission.REQUEST_DELETE_PACKAGES" tools:node="remove" />
     <uses-permission android:name="android.permission.SYSTEM_ALERT_WINDOW" tools:node="remove" />
     <uses-permission android:name="android.permission.ACTION_MANAGE_OVERLAY_PERMISSION" tools:node="remove" />
@@ -113,6 +112,12 @@
         <!-- Buy the author a coffee -->
         <activity
             android:name="com.liskovsoft.smartyoutubetv2.tv.ui.mobile.MobileDonateActivity"
+            android:configChanges="screenSize|smallestScreenSize|screenLayout|orientation|layoutDirection"
+            android:exported="false" />
+
+        <!-- In-app updates from the GitHub releases (installs need REQUEST_INSTALL_PACKAGES) -->
+        <activity
+            android:name="com.liskovsoft.smartyoutubetv2.tv.ui.mobile.MobileUpdateActivity"
             android:configChanges="screenSize|smallestScreenSize|screenLayout|orientation|layoutDirection"
             android:exported="false" />
 

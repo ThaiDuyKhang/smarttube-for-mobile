@@ -84,4 +84,21 @@
     <string name="mobile_account_copied">Đã sao chép số tài khoản</string>
     <string name="mobile_source_code">Mã nguồn</string>
     <string name="mobile_version">Phiên bản %s</string>
+    <string name="mobile_update_title">Cập nhật ứng dụng</string>
+    <string name="mobile_check_updates">Kiểm tra cập nhật</string>
+    <string name="mobile_update_current">Phiên bản đang dùng: %s</string>
+    <string name="mobile_update_checking">Đang kiểm tra bản cập nhật…</string>
+    <string name="mobile_update_latest">Bạn đang dùng phiên bản mới nhất</string>
+    <string name="mobile_update_available">Có bản mới: %s</string>
+    <string name="mobile_update_download">Tải và cài đặt (%s)</string>
+    <string name="mobile_update_downloading">Đang tải… %d%%</string>
+    <string name="mobile_update_verifying">Đang kiểm tra tệp…</string>
+    <string name="mobile_update_install">Cài đặt</string>
+    <string name="mobile_update_error">Không kiểm tra được bản cập nhật. Kiểm tra kết nối rồi thử lại.</string>
+    <string name="mobile_update_download_error">Tải về không thành công. Hãy thử lại.</string>
+    <string name="mobile_update_corrupted">Tệp tải về bị lỗi. Hãy thử lại.</string>
+    <string name="mobile_update_notes">Có gì mới</string>
+    <string name="mobile_update_permission">Cho phép SmartTube cài ứng dụng (chỉ dùng để tự cập nhật), rồi quay lại.</string>
+    <string name="mobile_update_dev">bản thử nghiệm</string>
+    <string name="mobile_update_open_page">Mở trang phát hành</string>
 </resources>

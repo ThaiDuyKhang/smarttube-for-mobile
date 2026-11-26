@@ -281,6 +281,7 @@ public class MobileFeedAdapter extends RecyclerView.Adapter<RecyclerView.ViewHol
         if (resId == R.drawable.settings_dearrow) return R.drawable.mobile_ic_set_dearrow;
         if (resId == R.drawable.settings_backup) return R.drawable.mobile_ic_set_backup;
         if (resId == R.drawable.settings_about) return R.drawable.mobile_ic_set_about;
+        if (resId == R.drawable.settings_update) return R.drawable.mobile_ic_set_update;
         return resId;
     }
 
