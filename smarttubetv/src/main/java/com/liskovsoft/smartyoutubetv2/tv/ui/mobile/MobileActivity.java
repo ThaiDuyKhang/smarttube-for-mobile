@@ -17,4 +17,10 @@ public abstract class MobileActivity extends LeanbackActivity {
     protected void initTheme() {
         setTheme(R.style.MobileTheme);
     }
+
+    @Override
+    public void onContentChanged() {
+        super.onContentChanged();
+        MobileUi.applySystemBarColors(this);
+    }
 }

@@ -38,7 +38,7 @@
             android:layout_height="48dp"
             android:background="@drawable/mobile_circle_dark"
             android:contentDescription="@string/mobile_more_options"
-            android:src="@drawable/mobile_ic_more_vert" />
+            android:src="@drawable/mobile_ic_v_more_vert" />
     </LinearLayout>
 
     <LinearLayout

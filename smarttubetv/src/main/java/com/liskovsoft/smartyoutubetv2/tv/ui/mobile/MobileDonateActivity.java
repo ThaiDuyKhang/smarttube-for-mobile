@@ -24,6 +24,7 @@ public class MobileDonateActivity extends Activity {
         if (locale != null) {
             config.setLocale(locale);
         }
+        com.liskovsoft.smartyoutubetv2.common.utils.MobileThemeHelper.apply(base, config);
         super.attachBaseContext(base.createConfigurationContext(config));
     }
 
@@ -32,6 +33,7 @@ public class MobileDonateActivity extends Activity {
         setTheme(R.style.MobileTheme);
         super.onCreate(savedInstanceState);
         setContentView(R.layout.mobile_activity_donate);
+        MobileUi.applySystemBarColors(this);
 
         findViewById(R.id.mobile_donate_back).setOnClickListener(v -> finish());
         findViewById(R.id.mobile_donate_copy).setOnClickListener(v -> {

@@ -667,7 +667,7 @@ public class MobilePlaybackActivity extends MobileActivity implements PlaybackVi
         mShortsOverlay.setVisibility(mIsShorts && !isPip ? View.VISIBLE : View.GONE);
         mControlsTitle.setVisibility(mIsFullscreen ? View.VISIBLE : View.INVISIBLE);
         mFullscreenActionsScroll.setVisibility(mIsFullscreen && !mIsShorts ? View.VISIBLE : View.GONE);
-        mFullscreenButton.setImageResource(mIsFullscreen ? R.drawable.mobile_ic_fullscreen_exit : R.drawable.mobile_ic_fullscreen);
+        mFullscreenButton.setImageResource(mIsFullscreen ? R.drawable.mobile_ic_v_fullscreen_exit : R.drawable.mobile_ic_v_fullscreen);
         mFullscreenButton.setContentDescription(getString(mIsFullscreen ? R.string.mobile_exit_fullscreen : R.string.mobile_fullscreen));
         mTimeBar.setVisibility(isPip ? View.GONE : View.VISIBLE);
         // Shorts fill the screen like the YouTube app (vertical video on a tall screen)
@@ -1002,9 +1002,9 @@ public class MobilePlaybackActivity extends MobileActivity implements PlaybackVi
 
         TextView shortsLike = findViewById(R.id.mobile_shorts_like);
         shortsLike.setText(likeCount);
-        shortsLike.setCompoundDrawablesWithIntrinsicBounds(0, isLiked ? R.drawable.mobile_ic_like_filled : R.drawable.mobile_ic_like, 0, 0);
+        shortsLike.setCompoundDrawablesWithIntrinsicBounds(0, isLiked ? R.drawable.mobile_ic_v_like_filled : R.drawable.mobile_ic_v_like, 0, 0);
         ((TextView) findViewById(R.id.mobile_shorts_dislike)).setCompoundDrawablesWithIntrinsicBounds(0,
-                isDisliked ? R.drawable.mobile_ic_dislike_filled : R.drawable.mobile_ic_dislike, 0, 0);
+                isDisliked ? R.drawable.mobile_ic_v_dislike_filled : R.drawable.mobile_ic_v_dislike, 0, 0);
 
         TextView speed = mDetails.findViewById(R.id.mobile_watch_speed);
         float speedValue = mPlayer != null ? getSpeed() : 1.0f;

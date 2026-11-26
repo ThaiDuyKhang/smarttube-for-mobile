@@ -42,6 +42,57 @@ public final class MobileUi {
         }
     }
 
+    /**
+     * Dark status and navigation bar icons on the light theme
+     */
+    @android.annotation.TargetApi(21)
+    @SuppressWarnings("deprecation")
+    public static void applySystemBarColors(Activity activity) {
+        if (android.os.Build.VERSION.SDK_INT < 21) {
+            return; // the mobile build starts at Android 5
+        }
+
+        boolean light = com.liskovsoft.smartyoutubetv2.common.utils.MobileThemeHelper.isLight(activity);
+
+        // The base theme (Theme.Black) doesn't paint the bars: let the app do it
+        activity.getWindow().clearFlags(android.view.WindowManager.LayoutParams.FLAG_TRANSLUCENT_STATUS
+                | android.view.WindowManager.LayoutParams.FLAG_TRANSLUCENT_NAVIGATION);
+        activity.getWindow().addFlags(android.view.WindowManager.LayoutParams.FLAG_DRAWS_SYSTEM_BAR_BACKGROUNDS);
+
+        // The watch page: black bars around the player, white icons
+        if (activity instanceof MobilePlaybackActivity) {
+            activity.getWindow().setStatusBarColor(0xFF000000);
+            activity.getWindow().setNavigationBarColor(0xFF000000);
+            return;
+        }
+
+        if (android.os.Build.VERSION.SDK_INT < 23) {
+            if (light) {
+                // White icons only before Android 6: keep the bars dark
+                activity.getWindow().setStatusBarColor(0xFF000000);
+                activity.getWindow().setNavigationBarColor(0xFF000000);
+            }
+            return;
+        }
+
+        // Bars in the page color (some screens of the base classes paint them black)
+        int barColor = androidx.core.content.ContextCompat.getColor(activity, R.color.mobile_bg);
+        activity.getWindow().setStatusBarColor(barColor);
+        if (android.os.Build.VERSION.SDK_INT >= 26 || !light) {
+            activity.getWindow().setNavigationBarColor(barColor);
+        }
+
+        android.view.View decor = activity.getWindow().getDecorView();
+        int flags = decor.getSystemUiVisibility();
+        flags = light ? flags | android.view.View.SYSTEM_UI_FLAG_LIGHT_STATUS_BAR : flags & ~android.view.View.SYSTEM_UI_FLAG_LIGHT_STATUS_BAR;
+        if (android.os.Build.VERSION.SDK_INT >= 26) {
+            flags = light ? flags | android.view.View.SYSTEM_UI_FLAG_LIGHT_NAVIGATION_BAR : flags & ~android.view.View.SYSTEM_UI_FLAG_LIGHT_NAVIGATION_BAR;
+        } else if (light) {
+            activity.getWindow().setNavigationBarColor(0xFF000000); // no dark navigation icons before Android 8
+        }
+        decor.setSystemUiVisibility(flags);
+    }
+
     public static boolean isSignedIn() {
         return MediaServiceManager.instance().getSelectedAccount() != null;
     }
@@ -59,7 +110,8 @@ public final class MobileUi {
             return;
         }
 
-        new AlertDialog.Builder(activity, android.R.style.Theme_DeviceDefault_Dialog_Alert)
+        new AlertDialog.Builder(activity, com.liskovsoft.smartyoutubetv2.common.utils.MobileThemeHelper.isLight(activity) ?
+                android.R.style.Theme_DeviceDefault_Light_Dialog_Alert : android.R.style.Theme_DeviceDefault_Dialog_Alert)
                 .setTitle(R.string.mobile_sign_in_required_title)
                 .setMessage(R.string.mobile_sign_in_required)
                 .setPositiveButton(R.string.mobile_sign_in, (dialog, which) -> YTSignInPresenter.instance(activity).start())

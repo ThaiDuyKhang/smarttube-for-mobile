@@ -38,6 +38,34 @@ public class AppDataSourceManager {
         return sInstance;
     }
 
+    /**
+     * Phones: dark, light or the device theme. The app restarts to apply it.
+     */
+    private static void showMobileThemeDialog(Context context) {
+        com.liskovsoft.smartyoutubetv2.common.app.presenters.AppDialogPresenter dialog =
+                com.liskovsoft.smartyoutubetv2.common.app.presenters.AppDialogPresenter.instance(context);
+        java.util.List<com.liskovsoft.smartyoutubetv2.common.app.models.playback.ui.OptionItem> options = new ArrayList<>();
+        int current = com.liskovsoft.smartyoutubetv2.common.utils.MobileThemeHelper.getTheme(context);
+        int[][] themes = {
+                {com.liskovsoft.smartyoutubetv2.common.utils.MobileThemeHelper.THEME_SYSTEM, R.string.mobile_theme_system},
+                {com.liskovsoft.smartyoutubetv2.common.utils.MobileThemeHelper.THEME_LIGHT, R.string.mobile_theme_light},
+                {com.liskovsoft.smartyoutubetv2.common.utils.MobileThemeHelper.THEME_DARK, R.string.mobile_theme_dark}};
+
+        for (int[] theme : themes) {
+            options.add(com.liskovsoft.smartyoutubetv2.common.app.models.playback.ui.UiOptionItem.from(context.getString(theme[1]), option -> {
+                if (theme[0] != com.liskovsoft.smartyoutubetv2.common.utils.MobileThemeHelper.getTheme(context)) {
+                    com.liskovsoft.smartyoutubetv2.common.utils.MobileThemeHelper.setTheme(context, theme[0]);
+                    dialog.closeDialog();
+                    com.liskovsoft.sharedutils.helpers.MessageHelpers.showMessage(context, R.string.mobile_theme_applying);
+                    Utils.restartTheApp(context);
+                }
+            }, theme[0] == current));
+        }
+
+        dialog.appendRadioCategory(context.getString(R.string.mobile_theme), options);
+        dialog.showDialog(context.getString(R.string.mobile_theme));
+    }
+
     public static void startMobileUpdates(Context context) {
         android.content.Intent intent = new android.content.Intent();
         intent.setClassName(context, "com.liskovsoft.smartyoutubetv2.tv.ui.mobile.MobileUpdateActivity");
@@ -52,6 +80,8 @@ public class AppDataSourceManager {
             // Phones: update from the GitHub releases without downloading the APK by hand
             settingItems.add(new SettingsItem(context.getString(R.string.mobile_check_updates),
                     () -> startMobileUpdates(context), R.drawable.settings_update));
+            settingItems.add(new SettingsItem(context.getString(R.string.mobile_theme),
+                    () -> showMobileThemeDialog(context), R.drawable.settings_theme));
         }
 
         settingItems.add(new SettingsItem(

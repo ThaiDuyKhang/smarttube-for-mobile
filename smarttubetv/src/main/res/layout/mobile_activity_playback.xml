@@ -90,31 +90,31 @@
                     <TextView
                         android:id="@+id/mobile_shorts_like"
                         style="@style/MobileShortsAction"
-                        android:drawableTop="@drawable/mobile_ic_like"
+                        android:drawableTop="@drawable/mobile_ic_v_like"
                         android:text="@string/mobile_like" />
 
                     <TextView
                         android:id="@+id/mobile_shorts_dislike"
                         style="@style/MobileShortsAction"
-                        android:drawableTop="@drawable/mobile_ic_dislike"
+                        android:drawableTop="@drawable/mobile_ic_v_dislike"
                         android:text="@string/mobile_dislike" />
 
                     <TextView
                         android:id="@+id/mobile_shorts_comments"
                         style="@style/MobileShortsAction"
-                        android:drawableTop="@drawable/mobile_ic_comment"
+                        android:drawableTop="@drawable/mobile_ic_v_comment"
                         android:text="@string/mobile_comments" />
 
                     <TextView
                         android:id="@+id/mobile_shorts_share"
                         style="@style/MobileShortsAction"
-                        android:drawableTop="@drawable/mobile_ic_share"
+                        android:drawableTop="@drawable/mobile_ic_v_share"
                         android:text="@string/mobile_share" />
 
                     <TextView
                         android:id="@+id/mobile_shorts_more"
                         style="@style/MobileShortsAction"
-                        android:drawableTop="@drawable/mobile_ic_more_vert"
+                        android:drawableTop="@drawable/mobile_ic_v_more_vert"
                         android:text="" />
                 </LinearLayout>
             </FrameLayout>
@@ -161,7 +161,7 @@
                         android:id="@+id/mobile_minimize"
                         style="@style/MobilePlayerButton"
                         android:contentDescription="@string/mobile_minimize"
-                        android:src="@drawable/mobile_ic_chevron_down" />
+                        android:src="@drawable/mobile_ic_v_chevron_down" />
 
                     <TextView
                         android:id="@+id/mobile_controls_title"
@@ -178,13 +178,13 @@
                         android:id="@+id/mobile_subtitles"
                         style="@style/MobilePlayerButton"
                         android:contentDescription="@string/mobile_subtitles"
-                        android:src="@drawable/mobile_ic_cc" />
+                        android:src="@drawable/mobile_ic_v_cc" />
 
                     <ImageButton
                         android:id="@+id/mobile_player_settings"
                         style="@style/MobilePlayerButton"
                         android:contentDescription="@string/mobile_player_settings"
-                        android:src="@drawable/mobile_ic_settings" />
+                        android:src="@drawable/mobile_ic_v_settings" />
                 </LinearLayout>
 
                 <LinearLayout
@@ -200,7 +200,7 @@
                         android:layout_height="48dp"
                         android:background="@drawable/mobile_player_circle"
                         android:contentDescription="@string/mobile_previous"
-                        android:src="@drawable/mobile_ic_skip_prev" />
+                        android:src="@drawable/mobile_ic_v_skip_prev" />
 
                     <ImageButton
                         android:id="@+id/mobile_play_pause"
@@ -219,7 +219,7 @@
                         android:layout_height="48dp"
                         android:background="@drawable/mobile_player_circle"
                         android:contentDescription="@string/mobile_next"
-                        android:src="@drawable/mobile_ic_skip_next" />
+                        android:src="@drawable/mobile_ic_v_skip_next" />
                 </LinearLayout>
 
                 <LinearLayout
@@ -251,7 +251,7 @@
                             android:id="@+id/mobile_fullscreen"
                             style="@style/MobilePlayerButton"
                             android:contentDescription="@string/mobile_fullscreen"
-                            android:src="@drawable/mobile_ic_fullscreen" />
+                            android:src="@drawable/mobile_ic_v_fullscreen" />
                     </LinearLayout>
 
                     <!-- Full screen only: quick actions under the time bar -->

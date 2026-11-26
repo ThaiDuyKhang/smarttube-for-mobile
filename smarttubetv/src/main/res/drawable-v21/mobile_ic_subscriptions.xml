@@ -1,0 +1,7 @@
+<?xml version="1.0" encoding="utf-8"?>
+<!-- Lucide icon (ISC license, lucide.dev) -->
+<vector xmlns:android="http://schemas.android.com/apk/res/android" android:width="24dp" android:height="24dp" android:viewportWidth="24" android:viewportHeight="24">
+    <path android:pathData="M 10 7.75 a 0.75 0.75 0 0 1 1.142 -0.638 l 3.664 2.249 a 0.75 0.75 0 0 1 0 1.278 l -3.664 2.25 a 0.75 0.75 0 0 1 -1.142 -0.64 z" android:fillColor="#00000000" android:strokeColor="@color/mobile_icon" android:strokeWidth="2" android:strokeLineCap="round" android:strokeLineJoin="round"/>
+    <path android:pathData="M 7 21 h 10" android:fillColor="#00000000" android:strokeColor="@color/mobile_icon" android:strokeWidth="2" android:strokeLineCap="round" android:strokeLineJoin="round"/>
+    <path android:pathData="M 4 3 h 16 a 2 2 0 0 1 2 2 v 10 a 2 2 0 0 1 -2 2 h -16 a 2 2 0 0 1 -2 -2 v -10 a 2 2 0 0 1 2 -2 z" android:fillColor="#00000000" android:strokeColor="@color/mobile_icon" android:strokeWidth="2" android:strokeLineCap="round" android:strokeLineJoin="round"/>
+</vector>

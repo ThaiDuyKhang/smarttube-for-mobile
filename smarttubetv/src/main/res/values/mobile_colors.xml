@@ -1,18 +1,22 @@
 <?xml version="1.0" encoding="utf-8"?>
-<!-- Mobile build: phone UI colors (dark) -->
+<!-- Mobile build: phone UI colors (light theme; the dark ones are in values-night) -->
 <resources>
-    <color name="mobile_bg">#0F0F0F</color>
-    <color name="mobile_surface">#212121</color>
-    <color name="mobile_chip">#272727</color>
-    <color name="mobile_chip_selected">#F1F1F1</color>
-    <color name="mobile_text">#F1F1F1</color>
-    <color name="mobile_text_secondary">#AAAAAA</color>
-    <color name="mobile_text_on_light">#0F0F0F</color>
-    <color name="mobile_divider">#272727</color>
+    <color name="mobile_bg">#FFFFFF</color>
+    <color name="mobile_surface">#FFFFFF</color>
+    <color name="mobile_chip">#F2F2F2</color>
+    <color name="mobile_chip_selected">#0F0F0F</color>
+    <color name="mobile_text">#0F0F0F</color>
+    <color name="mobile_text_secondary">#606060</color>
+    <color name="mobile_text_on_light">#FFFFFF</color>
+    <color name="mobile_divider">#E5E5E5</color>
+    <color name="mobile_divider_strong">#CCCCCC</color>
+    <color name="mobile_pressed">#D9D9D9</color>
+    <color name="mobile_circle">#1A000000</color>
+    <color name="mobile_icon">#0F0F0F</color>
+    <color name="mobile_thumb_placeholder">#E5E5E5</color>
+    <color name="mobile_scrim">#66000000</color>
     <color name="mobile_accent">#E53935</color>
     <color name="mobile_live">#CC0000</color>
     <color name="mobile_link">#3EA6FF</color>
-    <color name="mobile_scrim">#99000000</color>
     <color name="mobile_badge_bg">#CC000000</color>
-    <color name="mobile_thumb_placeholder">#272727</color>
 </resources>

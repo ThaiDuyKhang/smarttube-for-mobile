@@ -84,6 +84,7 @@ public class MobileUpdateActivity extends Activity {
         if (locale != null) {
             config.setLocale(locale);
         }
+        com.liskovsoft.smartyoutubetv2.common.utils.MobileThemeHelper.apply(base, config);
         super.attachBaseContext(base.createConfigurationContext(config));
     }
 
@@ -92,6 +93,7 @@ public class MobileUpdateActivity extends Activity {
         setTheme(R.style.MobileTheme);
         super.onCreate(savedInstanceState);
         setContentView(R.layout.mobile_activity_update);
+        MobileUi.applySystemBarColors(this);
 
         mStatus = findViewById(R.id.mobile_update_status);
         mButton = findViewById(R.id.mobile_update_button);

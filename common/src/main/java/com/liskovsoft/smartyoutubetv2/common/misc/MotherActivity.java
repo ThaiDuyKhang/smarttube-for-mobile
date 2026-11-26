@@ -234,6 +234,7 @@ public class MotherActivity extends FragmentActivity {
             if (locale != null) {
                 config.setLocale(locale);
             }
+            com.liskovsoft.smartyoutubetv2.common.utils.MobileThemeHelper.apply(context, config); // light or dark
             super.attachBaseContext(context.createConfigurationContext(config));
             return;
         }

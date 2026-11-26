@@ -1,0 +1,10 @@
+<?xml version="1.0" encoding="utf-8"?>
+<!-- Lucide icon (ISC license, lucide.dev) -->
+<vector xmlns:android="http://schemas.android.com/apk/res/android" android:width="24dp" android:height="24dp" android:viewportWidth="24" android:viewportHeight="24">
+    <path android:pathData="M 6 9 H 4.5 a 2.5 2.5 0 0 1 0 -5 H 6" android:fillColor="#00000000" android:strokeColor="@color/mobile_icon" android:strokeWidth="2" android:strokeLineCap="round" android:strokeLineJoin="round"/>
+    <path android:pathData="M 18 9 h 1.5 a 2.5 2.5 0 0 0 0 -5 H 18" android:fillColor="#00000000" android:strokeColor="@color/mobile_icon" android:strokeWidth="2" android:strokeLineCap="round" android:strokeLineJoin="round"/>
+    <path android:pathData="M 4 22 h 16" android:fillColor="#00000000" android:strokeColor="@color/mobile_icon" android:strokeWidth="2" android:strokeLineCap="round" android:strokeLineJoin="round"/>
+    <path android:pathData="M 10 14.66 V 17 c 0 0.55 -0.47 0.98 -0.97 1.21 C 7.85 18.75 7 20.24 7 22" android:fillColor="#00000000" android:strokeColor="@color/mobile_icon" android:strokeWidth="2" android:strokeLineCap="round" android:strokeLineJoin="round"/>
+    <path android:pathData="M 14 14.66 V 17 c 0 0.55 0.47 0.98 0.97 1.21 C 16.15 18.75 17 20.24 17 22" android:fillColor="#00000000" android:strokeColor="@color/mobile_icon" android:strokeWidth="2" android:strokeLineCap="round" android:strokeLineJoin="round"/>
+    <path android:pathData="M 18 2 H 6 v 7 a 6 6 0 0 0 12 0 V 2 Z" android:fillColor="#00000000" android:strokeColor="@color/mobile_icon" android:strokeWidth="2" android:strokeLineCap="round" android:strokeLineJoin="round"/>
+</vector>

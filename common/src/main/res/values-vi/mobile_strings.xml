@@ -101,4 +101,9 @@
     <string name="mobile_update_permission">Cho phép SmartTube cài ứng dụng (chỉ dùng để tự cập nhật), rồi quay lại.</string>
     <string name="mobile_update_dev">bản thử nghiệm</string>
     <string name="mobile_update_open_page">Mở trang phát hành</string>
+    <string name="mobile_theme">Giao diện sáng/tối</string>
+    <string name="mobile_theme_system">Theo giao diện của thiết bị</string>
+    <string name="mobile_theme_light">Giao diện sáng</string>
+    <string name="mobile_theme_dark">Giao diện tối</string>
+    <string name="mobile_theme_applying">Đang áp dụng giao diện…</string>
 </resources>
