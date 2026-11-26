@@ -920,6 +920,17 @@ public class MobilePlaybackActivity extends MobileActivity implements PlaybackVi
         }
     };
 
+    /**
+     * The screen stays on while a video plays (paused or ended: the device timeout again)
+     */
+    private void updateKeepScreenOn(boolean playing) {
+        if (playing) {
+            getWindow().addFlags(android.view.WindowManager.LayoutParams.FLAG_KEEP_SCREEN_ON);
+        } else {
+            getWindow().clearFlags(android.view.WindowManager.LayoutParams.FLAG_KEEP_SCREEN_ON);
+        }
+    }
+
     // ------------------------------- Controls -------------------------------
 
     private void setControlsShown(boolean show) {
@@ -1208,6 +1219,7 @@ public class MobilePlaybackActivity extends MobileActivity implements PlaybackVi
                 updatePlayPause();
                 updatePlaybackService();
                 updateAutoPip();
+                updateKeepScreenOn(playWhenReady && playbackState != Player.STATE_ENDED && playbackState != Player.STATE_IDLE);
 
                 if (playbackState == Player.STATE_ENDED) {
                     showControls(true);
@@ -1321,6 +1333,8 @@ public class MobilePlaybackActivity extends MobileActivity implements PlaybackVi
         if (mPlayer == null) {
             return;
         }
+
+        updateKeepScreenOn(false);
 
         MobilePlaybackService.stop(this);
 
