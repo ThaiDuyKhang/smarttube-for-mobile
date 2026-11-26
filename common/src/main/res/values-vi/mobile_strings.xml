@@ -17,7 +17,7 @@
     <string name="mobile_clear">Xóa</string>
     <string name="mobile_voice_search">Tìm kiếm bằng giọng nói</string>
     <string name="mobile_search_filters">Bộ lọc tìm kiếm</string>
-    <string name="mobile_search_hint">Tìm kiếm trên SmartTube</string>
+    <string name="mobile_search_hint">Tìm kiếm</string>
     <string name="mobile_no_results">Không tìm thấy kết quả</string>
     <string name="mobile_fill_query">Sửa từ khóa</string>
     <string name="mobile_remove_from_history">Xóa khỏi nhật ký tìm kiếm?</string>
@@ -65,4 +65,16 @@
     <string name="mobile_sort">Sắp xếp</string>
     <string name="mobile_channel_home">Trang chủ</string>
     <string name="mobile_search_results">Kết quả</string>
+    <string name="mobile_background_play">Phát nền</string>
+    <string name="mobile_background_play_on">Phát nền: Bật</string>
+    <string name="mobile_background_play_off">Phát nền: Tắt</string>
+    <string name="mobile_background_play_enabled">Vẫn nghe khi tắt màn hình hoặc mở ứng dụng khác</string>
+    <string name="mobile_background_play_disabled">Video dừng khi thoát hoặc tắt màn hình</string>
+    <string name="mobile_close_player">Đóng</string>
+    <string name="mobile_filter_today">Hôm nay</string>
+    <string name="mobile_filter_videos">Video</string>
+    <string name="mobile_filter_shorts">Shorts</string>
+    <string name="mobile_filter_live">Trực tiếp</string>
+    <string name="mobile_filter_continue">Tiếp tục xem</string>
+    <string name="mobile_filter_unwatched">Chưa xem</string>
 </resources>

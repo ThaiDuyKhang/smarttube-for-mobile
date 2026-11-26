@@ -72,24 +72,27 @@
 
         <TextView
             android:id="@+id/mobile_watch_author"
-            android:layout_width="wrap_content"
+            android:layout_width="0dp"
             android:layout_height="wrap_content"
             android:layout_marginStart="10dp"
+            android:layout_weight="1"
             android:ellipsize="end"
-            android:maxWidth="180dp"
             android:maxLines="1"
+            android:singleLine="true"
             android:textColor="@color/mobile_text"
             android:textSize="15sp"
             android:textStyle="bold" />
 
         <TextView
             android:id="@+id/mobile_watch_subscribers"
-            android:layout_width="0dp"
+            android:layout_width="wrap_content"
             android:layout_height="wrap_content"
-            android:layout_marginStart="8dp"
-            android:layout_weight="1"
+            android:layout_marginStart="6dp"
+            android:layout_marginEnd="8dp"
             android:ellipsize="end"
+            android:maxWidth="72dp"
             android:maxLines="1"
+            android:singleLine="true"
             android:textColor="@color/mobile_text_secondary"
             android:textSize="12sp" />
 
@@ -101,6 +104,9 @@
             android:gravity="center"
             android:paddingStart="16dp"
             android:paddingEnd="16dp"
+            android:maxLines="1"
+            android:minWidth="88dp"
+            android:singleLine="true"
             android:text="@string/mobile_subscribe"
             android:textColor="@color/mobile_text_on_light"
             android:textSize="14sp"
@@ -170,6 +176,12 @@
                 style="@style/MobilePill"
                 android:drawableStart="@drawable/mobile_ic_save"
                 android:text="@string/mobile_save" />
+
+            <TextView
+                android:id="@+id/mobile_watch_background"
+                style="@style/MobilePill"
+                android:drawableStart="@drawable/mobile_ic_headphones"
+                android:text="@string/mobile_background_play" />
 
             <TextView
                 android:id="@+id/mobile_watch_speed"

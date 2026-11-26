@@ -32,6 +32,12 @@
     <!-- Tell "no internet" apart from other errors -->
     <uses-permission android:name="android.permission.ACCESS_NETWORK_STATE" />
 
+    <!-- Background play: keep the CPU and Wi-Fi awake while the sound plays with the screen off -->
+    <uses-permission android:name="android.permission.WAKE_LOCK" />
+    <uses-permission android:name="android.permission.FOREGROUND_SERVICE" />
+    <uses-permission android:name="android.permission.FOREGROUND_SERVICE_MEDIA_PLAYBACK" />
+    <uses-permission android:name="android.permission.POST_NOTIFICATIONS" />
+
     <application>
         <!-- Phone main screen (see MainApplication: registered instead of the TV one) -->
         <activity
@@ -83,6 +89,13 @@
             android:exported="false"
             android:launchMode="singleInstance"
             android:screenOrientation="unspecified" />
+
+        <!-- Background play (screen off) -->
+        <service
+            android:name="com.liskovsoft.smartyoutubetv2.tv.ui.mobile.MobilePlaybackService"
+            android:exported="false"
+            android:foregroundServiceType="mediaPlayback"
+            tools:targetApi="29" />
 
         <!-- Phone search screen -->
         <activity

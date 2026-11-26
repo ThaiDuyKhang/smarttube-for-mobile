@@ -12,89 +12,6 @@
         android:layout_height="match_parent"
         android:orientation="vertical">
 
-        <LinearLayout
-            android:id="@+id/mobile_top_bar"
-            android:layout_width="match_parent"
-            android:layout_height="56dp"
-            android:gravity="center_vertical"
-            android:orientation="horizontal"
-            android:paddingStart="16dp"
-            android:paddingEnd="4dp">
-
-            <TextView
-                android:layout_width="30dp"
-                android:layout_height="22dp"
-                android:background="@drawable/mobile_logo_bg"
-                android:gravity="center"
-                android:text="S"
-                android:textColor="#FFFFFF"
-                android:textSize="15sp"
-                android:textStyle="bold"
-                tools:ignore="HardcodedText" />
-
-            <TextView
-                android:id="@+id/mobile_title"
-                android:layout_width="0dp"
-                android:layout_height="wrap_content"
-                android:layout_marginStart="6dp"
-                android:layout_weight="1"
-                android:text="@string/mobile_app_title"
-                android:textColor="@color/mobile_text"
-                android:textSize="19sp"
-                android:textStyle="bold" />
-
-            <ImageButton
-                android:id="@+id/mobile_notifications"
-                android:layout_width="48dp"
-                android:layout_height="48dp"
-                android:background="?android:attr/selectableItemBackground"
-                android:contentDescription="@string/mobile_notifications"
-                android:src="@drawable/mobile_ic_bell" />
-
-            <ImageButton
-                android:id="@+id/mobile_search"
-                android:layout_width="48dp"
-                android:layout_height="48dp"
-                android:background="?android:attr/selectableItemBackground"
-                android:contentDescription="@string/mobile_search"
-                android:src="@drawable/mobile_ic_search" />
-
-            <ImageButton
-                android:id="@+id/mobile_settings"
-                android:layout_width="48dp"
-                android:layout_height="48dp"
-                android:background="?android:attr/selectableItemBackground"
-                android:contentDescription="@string/mobile_settings"
-                android:src="@drawable/mobile_ic_settings"
-                android:visibility="gone" />
-        </LinearLayout>
-
-        <HorizontalScrollView
-            android:id="@+id/mobile_chips_scroll"
-            android:layout_width="match_parent"
-            android:layout_height="48dp"
-            android:scrollbars="none">
-
-            <LinearLayout
-                android:id="@+id/mobile_chips"
-                android:layout_width="wrap_content"
-                android:layout_height="match_parent"
-                android:gravity="center_vertical"
-                android:orientation="horizontal"
-                android:paddingStart="12dp"
-                android:paddingEnd="12dp">
-
-                <ImageButton
-                    android:id="@+id/mobile_explore"
-                    android:layout_width="48dp"
-                    android:layout_height="32dp"
-                    android:background="@drawable/mobile_chip_bg"
-                    android:contentDescription="@string/mobile_explore"
-                    android:scaleType="center"
-                    android:src="@drawable/mobile_ic_compass" />
-            </LinearLayout>
-        </HorizontalScrollView>
-
         <FrameLayout
             android:layout_width="match_parent"
             android:layout_height="0dp"
@@ -143,6 +60,158 @@
                 android:layout_height="40dp"
                 android:layout_gravity="center"
                 android:visibility="gone" />
+
+            <!-- Header: hides when scrolling down, comes back when scrolling up (like the YouTube app) -->
+            <LinearLayout
+                android:id="@+id/mobile_header"
+                android:layout_width="match_parent"
+                android:layout_height="wrap_content"
+                android:background="@color/mobile_bg"
+                android:orientation="vertical">
+
+            <LinearLayout
+                android:id="@+id/mobile_top_bar"
+                android:layout_width="match_parent"
+                android:layout_height="56dp"
+                android:gravity="center_vertical"
+                android:orientation="horizontal"
+                android:paddingStart="16dp"
+                android:paddingEnd="4dp">
+
+                <TextView
+                    android:layout_width="30dp"
+                    android:layout_height="22dp"
+                    android:background="@drawable/mobile_logo_bg"
+                    android:gravity="center"
+                    android:text="S"
+                    android:textColor="#FFFFFF"
+                    android:textSize="15sp"
+                    android:textStyle="bold"
+                    tools:ignore="HardcodedText" />
+
+                <TextView
+                    android:id="@+id/mobile_title"
+                    android:layout_width="0dp"
+                    android:layout_height="wrap_content"
+                    android:layout_marginStart="6dp"
+                    android:layout_weight="1"
+                    android:text="@string/mobile_app_title"
+                    android:textColor="@color/mobile_text"
+                    android:textSize="19sp"
+                    android:textStyle="bold" />
+
+                <ImageButton
+                    android:id="@+id/mobile_notifications"
+                    android:layout_width="48dp"
+                    android:layout_height="48dp"
+                    android:background="?android:attr/selectableItemBackground"
+                    android:contentDescription="@string/mobile_notifications"
+                    android:src="@drawable/mobile_ic_bell" />
+
+                <ImageButton
+                    android:id="@+id/mobile_search"
+                    android:layout_width="48dp"
+                    android:layout_height="48dp"
+                    android:background="?android:attr/selectableItemBackground"
+                    android:contentDescription="@string/mobile_search"
+                    android:src="@drawable/mobile_ic_search" />
+
+                <ImageButton
+                    android:id="@+id/mobile_settings"
+                    android:layout_width="48dp"
+                    android:layout_height="48dp"
+                    android:background="?android:attr/selectableItemBackground"
+                    android:contentDescription="@string/mobile_settings"
+                    android:src="@drawable/mobile_ic_settings"
+                    android:visibility="gone" />
+            </LinearLayout>
+
+            <HorizontalScrollView
+                android:id="@+id/mobile_chips_scroll"
+                android:layout_width="match_parent"
+                android:layout_height="48dp"
+                android:scrollbars="none">
+
+                <LinearLayout
+                    android:id="@+id/mobile_chips"
+                    android:layout_width="wrap_content"
+                    android:layout_height="match_parent"
+                    android:gravity="center_vertical"
+                    android:orientation="horizontal"
+                    android:paddingStart="12dp"
+                    android:paddingEnd="12dp">
+
+                    <ImageButton
+                        android:id="@+id/mobile_explore"
+                        android:layout_width="48dp"
+                        android:layout_height="32dp"
+                        android:background="@drawable/mobile_chip_bg"
+                        android:contentDescription="@string/mobile_explore"
+                        android:scaleType="center"
+                        android:src="@drawable/mobile_ic_compass" />
+                </LinearLayout>
+            </HorizontalScrollView>
+
+                <!-- Subscriptions: most watched channels and filters -->
+                <LinearLayout
+                    android:id="@+id/mobile_subs_header"
+                    android:layout_width="match_parent"
+                    android:layout_height="wrap_content"
+                    android:orientation="vertical"
+                    android:visibility="gone">
+
+                    <LinearLayout
+                        android:id="@+id/mobile_subs_channels_row"
+                        android:layout_width="match_parent"
+                        android:layout_height="wrap_content"
+                        android:gravity="center_vertical"
+                        android:orientation="horizontal">
+
+                        <HorizontalScrollView
+                            android:layout_width="0dp"
+                            android:layout_height="wrap_content"
+                            android:layout_weight="1"
+                            android:scrollbars="none">
+
+                            <LinearLayout
+                                android:id="@+id/mobile_subs_channels"
+                                android:layout_width="wrap_content"
+                                android:layout_height="wrap_content"
+                                android:orientation="horizontal"
+                                android:paddingStart="8dp"
+                                android:paddingEnd="4dp" />
+                        </HorizontalScrollView>
+
+                        <TextView
+                            android:id="@+id/mobile_subs_all"
+                            android:layout_width="wrap_content"
+                            android:layout_height="48dp"
+                            android:background="?android:attr/selectableItemBackground"
+                            android:gravity="center"
+                            android:paddingStart="12dp"
+                            android:paddingEnd="16dp"
+                            android:text="@string/mobile_all"
+                            android:textColor="#3EA6FF"
+                            android:textSize="14sp"
+                            android:textStyle="bold" />
+                    </LinearLayout>
+
+                    <HorizontalScrollView
+                        android:layout_width="match_parent"
+                        android:layout_height="48dp"
+                        android:scrollbars="none">
+
+                        <LinearLayout
+                            android:id="@+id/mobile_subs_filters"
+                            android:layout_width="wrap_content"
+                            android:layout_height="match_parent"
+                            android:gravity="center_vertical"
+                            android:orientation="horizontal"
+                            android:paddingStart="4dp"
+                            android:paddingEnd="12dp" />
+                    </HorizontalScrollView>
+                </LinearLayout>
+            </LinearLayout>
         </FrameLayout>
 
         <View

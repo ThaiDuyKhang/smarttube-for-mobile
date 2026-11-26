@@ -19,7 +19,7 @@
     <string name="mobile_clear">Clear</string>
     <string name="mobile_voice_search">Search with your voice</string>
     <string name="mobile_search_filters">Search filters</string>
-    <string name="mobile_search_hint">Search SmartTube</string>
+    <string name="mobile_search_hint">Search</string>
     <string name="mobile_no_results">No results found</string>
     <string name="mobile_fill_query">Edit the query</string>
     <string name="mobile_remove_from_history">Remove from search history?</string>
@@ -67,4 +67,16 @@
     <string name="mobile_sort">Sort</string>
     <string name="mobile_channel_home">Home</string>
     <string name="mobile_search_results">Results</string>
+    <string name="mobile_background_play">Background play</string>
+    <string name="mobile_background_play_on">Background play: on</string>
+    <string name="mobile_background_play_off">Background play: off</string>
+    <string name="mobile_background_play_enabled">The sound keeps playing with the screen off or in other apps</string>
+    <string name="mobile_background_play_disabled">The video stops when you leave it or turn off the screen</string>
+    <string name="mobile_close_player">Close</string>
+    <string name="mobile_filter_today">Today</string>
+    <string name="mobile_filter_videos">Videos</string>
+    <string name="mobile_filter_shorts">Shorts</string>
+    <string name="mobile_filter_live">Live</string>
+    <string name="mobile_filter_continue">Continue watching</string>
+    <string name="mobile_filter_unwatched">Unwatched</string>
 </resources>

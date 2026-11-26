@@ -159,6 +159,7 @@ public class MobilePlaybackActivity extends MobileActivity implements PlaybackVi
             mSelectedVideoId = null;
         }
 
+        applyBackgroundPlayDefault();
         mPresenter.onViewInitialized();
 
         if (mSelectedVideoId != null) {
@@ -287,6 +288,7 @@ public class MobilePlaybackActivity extends MobileActivity implements PlaybackVi
     @Override
     public void finishReally() {
         super.finishReally();
+        MobilePlaybackService.stop(this);
 
         if (Util.SDK_INT > 23) {
             maybeReleasePlayer();
@@ -551,6 +553,7 @@ public class MobilePlaybackActivity extends MobileActivity implements PlaybackVi
         mDetails.findViewById(R.id.mobile_watch_repeat).setOnLongClickListener(v -> longClickButton(R.id.action_repeat));
         mDetails.findViewById(R.id.mobile_watch_pip).setOnClickListener(v -> clickButton(R.id.action_pip));
         mDetails.findViewById(R.id.mobile_watch_pip).setVisibility(Helpers.isPictureInPictureSupported(this) ? View.VISIBLE : View.GONE);
+        mDetails.findViewById(R.id.mobile_watch_background).setOnClickListener(v -> toggleBackgroundPlay());
         mDetails.findViewById(R.id.mobile_watch_comments).setOnClickListener(v -> clickButton(R.id.action_chat));
 
         mAdapter = new MobileFeedAdapter(this);
@@ -710,6 +713,99 @@ public class MobilePlaybackActivity extends MobileActivity implements PlaybackVi
             getWindow().getDecorView().setSystemUiVisibility(flags);
         }
     }
+
+    // ------------------------------- Background play (screen off, other apps) -------------------------------
+
+    /**
+     * Phones: play the sound with the screen off by default (once, the user can turn it off on the watch page)
+     */
+    private void applyBackgroundPlayDefault() {
+        android.content.SharedPreferences prefs = getSharedPreferences("mobile_ui", MODE_PRIVATE);
+
+        if (!prefs.getBoolean("background_play_default", false)) {
+            if (getPlayerData().getBackgroundMode() == PlayerData.BACKGROUND_MODE_DEFAULT) {
+                getPlayerData().setBackgroundMode(PlayerData.BACKGROUND_MODE_SOUND);
+            }
+            prefs.edit().putBoolean("background_play_default", true).apply();
+        }
+
+        requestNotificationPermission();
+    }
+
+    /**
+     * Android 13+: the lock screen controls of the background play need the notifications permission
+     */
+    private void requestNotificationPermission() {
+        if (Build.VERSION.SDK_INT >= 33 && isBackgroundPlayEnabled()
+                && checkSelfPermission("android.permission.POST_NOTIFICATIONS") != android.content.pm.PackageManager.PERMISSION_GRANTED) {
+            android.content.SharedPreferences prefs = getSharedPreferences("mobile_ui", MODE_PRIVATE);
+            if (!prefs.getBoolean("notification_permission_asked", false)) {
+                prefs.edit().putBoolean("notification_permission_asked", true).apply();
+                requestPermissions(new String[] {"android.permission.POST_NOTIFICATIONS"}, 1002);
+            }
+        }
+    }
+
+    private boolean isBackgroundPlayEnabled() {
+        return getPlayerData().getBackgroundMode() != PlayerData.BACKGROUND_MODE_DEFAULT;
+    }
+
+    private void toggleBackgroundPlay() {
+        boolean enable = !isBackgroundPlayEnabled();
+        getPlayerData().setBackgroundMode(enable ? PlayerData.BACKGROUND_MODE_SOUND : PlayerData.BACKGROUND_MODE_DEFAULT);
+        android.widget.Toast.makeText(this, enable ? R.string.mobile_background_play_enabled : R.string.mobile_background_play_disabled,
+                android.widget.Toast.LENGTH_SHORT).show();
+        bindDetails();
+        updatePlaybackService();
+    }
+
+    /**
+     * Lock screen and notification controls while a video plays with background play on
+     */
+    private void updatePlaybackService() {
+        if (mPlayer == null || !isBackgroundPlayEnabled() || !containsMedia()) {
+            MobilePlaybackService.stop(this);
+            return;
+        }
+
+        Video video = getVideo();
+
+        if (!getPlayWhenReady() && !isEngineBlocked() && !isFinishing()) {
+            // Paused while on the screen: no need to keep the app alive
+            MobilePlaybackService.stop(this);
+            return;
+        }
+
+        MobilePlaybackService.update(this, mServiceControls, mMediaSession != null ? mMediaSession.getSessionToken() : null,
+                video != null ? video.getTitleFull() : null, video != null ? video.getAuthor() : null, getPlayWhenReady());
+    }
+
+    private final MobilePlaybackService.Controls mServiceControls = new MobilePlaybackService.Controls() {
+        @Override
+        public void onPlayPause() {
+            togglePlayback();
+            updatePlaybackService();
+        }
+
+        @Override
+        public void onNext() {
+            mPresenter.onNextClicked();
+        }
+
+        @Override
+        public void onPrevious() {
+            mPresenter.onPreviousClicked();
+        }
+
+        @Override
+        public void onStop() {
+            if (mPlayer != null && getPlayWhenReady()) {
+                setPlayWhenReady(false);
+                mPresenter.onPauseClicked();
+            }
+            MobilePlaybackService.stop(MobilePlaybackActivity.this);
+        }
+    };
 
     // ------------------------------- Controls -------------------------------
 
@@ -914,6 +1010,9 @@ public class MobilePlaybackActivity extends MobileActivity implements PlaybackVi
         float speedValue = mPlayer != null ? getSpeed() : 1.0f;
         speed.setText(String.format("%s %sx", getString(R.string.mobile_speed), Helpers.formatFloat(speedValue)));
 
+        TextView background = mDetails.findViewById(R.id.mobile_watch_background);
+        background.setText(isBackgroundPlayEnabled() ? R.string.mobile_background_play_on : R.string.mobile_background_play_off);
+
         TextView repeat = mDetails.findViewById(R.id.mobile_watch_repeat);
         repeat.setSelected(getButtonState(R.id.action_repeat) == PlayerUI.BUTTON_ON);
 
@@ -994,6 +1093,7 @@ public class MobilePlaybackActivity extends MobileActivity implements PlaybackVi
                 }
 
                 updatePlayPause();
+                updatePlaybackService();
 
                 if (playbackState == Player.STATE_ENDED) {
                     showControls(true);
@@ -1107,6 +1207,8 @@ public class MobilePlaybackActivity extends MobileActivity implements PlaybackVi
         if (mPlayer == null) {
             return;
         }
+
+        MobilePlaybackService.stop(this);
 
         Log.d(TAG, "releasePlayer: Start releasing player engine...");
         mPresenter.onEngineReleased();

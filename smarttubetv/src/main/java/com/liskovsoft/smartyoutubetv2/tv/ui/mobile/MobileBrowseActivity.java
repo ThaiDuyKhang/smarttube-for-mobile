@@ -70,6 +70,19 @@ public class MobileBrowseActivity extends MobileActivity implements BrowseView, 
     private int mLastHomeSectionId = MediaGroup.TYPE_HOME;
     private int mCurrentTab = TAB_HOME;
     private boolean mIsFirstSectionSelected;
+    private View mHeader;
+    private View mSubsHeader;
+    private LinearLayout mSubsChannels;
+    private LinearLayout mSubsFilters;
+    private int mSubsFilter = FILTER_ALL;
+    private boolean mIsSubsChannelsLoaded;
+    private static final int FILTER_ALL = 0;
+    private static final int FILTER_TODAY = 1;
+    private static final int FILTER_VIDEOS = 2;
+    private static final int FILTER_SHORTS = 3;
+    private static final int FILTER_LIVE = 4;
+    private static final int FILTER_CONTINUE = 5;
+    private static final int FILTER_UNWATCHED = 6;
     private final Object mHistoryHeaderOwner = new Object();
     private final java.util.Map<Integer, SettingsItem> mLibraryItems = new java.util.HashMap<>();
     private boolean mIsCreated;
@@ -177,6 +190,17 @@ public class MobileBrowseActivity extends MobileActivity implements BrowseView, 
     }
 
     private void initViews() {
+        mHeader = findViewById(R.id.mobile_header);
+        mSubsHeader = findViewById(R.id.mobile_subs_header);
+        mSubsChannels = findViewById(R.id.mobile_subs_channels);
+        mSubsFilters = findViewById(R.id.mobile_subs_filters);
+        findViewById(R.id.mobile_subs_all).setOnClickListener(v -> openSectionById(MediaGroup.TYPE_CHANNEL_UPLOADS));
+        // The feed starts below the header
+        mHeader.addOnLayoutChangeListener((v, l, t, r, b, ol, ot, or, ob) -> {
+            if (b - t != ob - ot) {
+                mFeed.post(this::applyFeedPadding);
+            }
+        });
         mTopBar = findViewById(R.id.mobile_top_bar);
         mChipsScroll = findViewById(R.id.mobile_chips_scroll);
         mChips = findViewById(R.id.mobile_chips);
@@ -225,6 +249,7 @@ public class MobileBrowseActivity extends MobileActivity implements BrowseView, 
             @Override
             public void onScrolled(@NonNull RecyclerView recyclerView, int dx, int dy) {
                 checkLoadMore();
+                moveHeader(dy);
             }
         });
 
@@ -295,7 +320,12 @@ public class MobileBrowseActivity extends MobileActivity implements BrowseView, 
         mSettingsButton.setVisibility(isYou ? View.VISIBLE : View.GONE);
         mNotificationsButton.setVisibility(findSection(MediaGroup.TYPE_NOTIFICATIONS) != null ? View.VISIBLE : View.GONE);
         // Shorts pages fill the feed exactly, so no bottom padding there
-        mFeed.setPadding(0, 0, 0, isShorts ? 0 : dp(8));
+        mSubsHeader.setVisibility(mCurrentTab == TAB_SUBSCRIPTIONS && MobileUi.isSignedIn() ? View.VISIBLE : View.GONE);
+        if (mCurrentTab == TAB_SUBSCRIPTIONS) {
+            updateSubsHeader();
+        }
+        showHeader();
+        applyFeedPadding();
         setSnapEnabled(isShorts);
     }
 
@@ -374,6 +404,9 @@ public class MobileBrowseActivity extends MobileActivity implements BrowseView, 
     }
 
     private void resetContent() {
+        if (mHeader != null) {
+            showHeader();
+        }
         mBlocks.clear();
         mSettings.clear();
         mLastLoadMoreVideo = null;
@@ -473,8 +506,8 @@ public class MobileBrowseActivity extends MobileActivity implements BrowseView, 
         for (BrowseSection section : mSections) {
             View row = inflater.inflate(R.layout.mobile_item_setting, mDrawerItems, false);
             ImageView icon = row.findViewById(R.id.mobile_row_icon);
-            if (section.getResId() > 0) {
-                icon.setImageResource(section.getResId());
+            if (getSectionIcon(section) > 0) {
+                icon.setImageResource(getSectionIcon(section));
             } else if (!TextUtils.isEmpty(section.getIconUrl())) {
                 Glide.with(this).load(section.getIconUrl()).into(icon);
             }
@@ -506,6 +539,150 @@ public class MobileBrowseActivity extends MobileActivity implements BrowseView, 
     }
 
     // ------------------------------- Feed -------------------------------
+
+    // ------------------------------- Collapsing header -------------------------------
+
+    private void applyFeedPadding() {
+        boolean isShorts = mCurrentTab == TAB_SHORTS;
+        int top = isShorts ? 0 : mHeader.getHeight();
+        if (mFeed.getPaddingTop() != top || mFeed.getPaddingBottom() != (isShorts ? 0 : dp(8))) {
+            mFeed.setPadding(0, top, 0, isShorts ? 0 : dp(8));
+        }
+    }
+
+    /**
+     * Scrolling down hides the header, scrolling up shows it again (like the YouTube app)
+     */
+    private void moveHeader(int dy) {
+        int height = mHeader.getHeight();
+
+        if (height == 0 || mCurrentTab == TAB_SHORTS) {
+            return;
+        }
+
+        float translation = mHeader.getTranslationY() - dy;
+        // At the top of the list the header is always shown
+        if (!mFeed.canScrollVertically(-1)) {
+            translation = 0;
+        }
+        mHeader.setTranslationY(Math.max(-height, Math.min(0, translation)));
+    }
+
+    private void showHeader() {
+        mHeader.animate().cancel();
+        mHeader.setTranslationY(0);
+    }
+
+    // ------------------------------- Subscriptions header -------------------------------
+
+    private void updateSubsHeader() {
+        updateSubsFilters();
+
+        if (!mIsSubsChannelsLoaded && MobileUi.isSignedIn()) {
+            mIsSubsChannelsLoaded = true;
+            loadSubsChannels();
+        }
+
+        findViewById(R.id.mobile_subs_channels_row).setVisibility(mSubsChannels.getChildCount() > 0 ? View.VISIBLE : View.GONE);
+    }
+
+    private void loadSubsChannels() {
+        com.liskovsoft.sharedutils.rx.RxHelper.execute(
+                com.liskovsoft.youtubeapi.service.YouTubeServiceManager.instance().getContentService().getSubscribedChannelsByLastViewedObserve(),
+                group -> runOnUiThread(() -> showSubsChannels(group != null ? VideoGroup.from(group).getVideos() : null)),
+                error -> runOnUiThread(() -> mIsSubsChannelsLoaded = false));
+    }
+
+    private void showSubsChannels(List<Video> channels) {
+        mSubsChannels.removeAllViews();
+
+        if (channels != null) {
+            LayoutInflater inflater = LayoutInflater.from(this);
+            int count = 0;
+            for (Video channel : channels) {
+                if (count++ >= 15) {
+                    break; // the most watched ones, like the YouTube app
+                }
+                View item = inflater.inflate(R.layout.mobile_item_channel_avatar, mSubsChannels, false);
+                ImageView avatar = item.findViewById(R.id.mobile_channel_item_avatar);
+                Glide.with(this).load(channel.getCardImageUrl()).apply(com.bumptech.glide.request.RequestOptions.circleCropTransform()).into(avatar);
+                ((TextView) item.findViewById(R.id.mobile_channel_item_name)).setText(channel.getTitle());
+                item.findViewById(R.id.mobile_channel_item_dot).setVisibility(channel.hasNewContent ? View.VISIBLE : View.GONE);
+                item.setOnClickListener(v -> com.liskovsoft.smartyoutubetv2.common.app.presenters.dialogs
+.VideoActionPresenter.instance(this).apply(channel));
+                mSubsChannels.addView(item);
+            }
+        }
+
+        findViewById(R.id.mobile_subs_channels_row).setVisibility(mSubsChannels.getChildCount() > 0 ? View.VISIBLE : View.GONE);
+    }
+
+    private void updateSubsFilters() {
+        mSubsFilters.removeAllViews();
+        int[][] filters = {
+                {FILTER_ALL, R.string.mobile_all}, {FILTER_TODAY, R.string.mobile_filter_today}, {FILTER_VIDEOS, R.string.mobile_filter_videos},
+                {FILTER_SHORTS, R.string.mobile_filter_shorts}, {FILTER_LIVE, R.string.mobile_filter_live},
+                {FILTER_CONTINUE, R.string.mobile_filter_continue}, {FILTER_UNWATCHED, R.string.mobile_filter_unwatched}};
+
+        for (int[] filter : filters) {
+            boolean selected = filter[0] == mSubsFilter;
+            TextView chip = new TextView(this);
+            chip.setText(filter[1]);
+            chip.setTextSize(14);
+            chip.setGravity(Gravity.CENTER);
+            chip.setSingleLine(true);
+            chip.setPadding(dp(12), 0, dp(12), 0);
+            chip.setBackgroundResource(selected ? R.drawable.mobile_chip_selected_bg : R.drawable.mobile_chip_bg);
+            chip.setTextColor(ContextCompat.getColor(this, selected ? R.color.mobile_text_on_light : R.color.mobile_text));
+            chip.setOnClickListener(v -> {
+                mSubsFilter = filter[0];
+                updateSubsFilters();
+                rebuildFeed();
+                mFeed.scrollToPosition(0);
+                showHeader();
+            });
+            LinearLayout.LayoutParams lp = new LinearLayout.LayoutParams(ViewGroup.LayoutParams.WRAP_CONTENT, dp(32));
+            lp.setMarginStart(dp(8));
+            mSubsFilters.addView(chip, lp);
+        }
+    }
+
+    private boolean matchesSubsFilter(Video video, boolean inShortsBlock) {
+        if (mCurrentTab != TAB_SUBSCRIPTIONS) {
+            return true;
+        }
+
+        boolean isShorts = inShortsBlock || video.isShorts;
+
+        switch (mSubsFilter) {
+            case FILTER_TODAY:
+                return isToday(video);
+            case FILTER_VIDEOS:
+                return !isShorts && !video.isLive;
+            case FILTER_SHORTS:
+                return isShorts;
+            case FILTER_LIVE:
+                return video.isLive || video.isUpcoming;
+            case FILTER_CONTINUE:
+                return video.percentWatched > 0 && video.percentWatched < 95;
+            case FILTER_UNWATCHED:
+                return video.percentWatched <= 0;
+            default:
+                return true;
+        }
+    }
+
+    private static boolean isToday(Video video) {
+        if (video.isLive) {
+            return true;
+        }
+
+        CharSequence second = video.getSecondTitle();
+        String text = second != null ? second.toString().toLowerCase() : "";
+        // "3 giờ trước", "20 phút trước", "3 hours ago", "20 minutes ago"...
+        return text.contains("giờ trước") || text.contains("phút trước") || text.contains("giây trước")
+                || text.matches(".*\\b(hour|hours|minute|minutes|second|seconds) ago.*");
+    }
 
     private void rebuildFeed() {
         List<MobileFeedAdapter.Item> items = new ArrayList<>();
@@ -551,10 +728,23 @@ public class MobileBrowseActivity extends MobileActivity implements BrowseView, 
                 items.add(MobileFeedAdapter.Item.header(block.title, block));
             }
 
-            if (block.isShorts) {
-                items.add(MobileFeedAdapter.Item.shortsRow(block.videos, block));
-            } else {
+            List<Video> videos = block.videos;
+            if (mCurrentTab == TAB_SUBSCRIPTIONS && mSubsFilter != FILTER_ALL) {
+                videos = new ArrayList<>();
                 for (Video video : block.videos) {
+                    if (matchesSubsFilter(video, block.isShorts)) {
+                        videos.add(video);
+                    }
+                }
+                if (videos.isEmpty()) {
+                    continue;
+                }
+            }
+
+            if (block.isShorts) {
+                items.add(MobileFeedAdapter.Item.shortsRow(videos, block));
+            } else {
+                for (Video video : videos) {
                     items.add(MobileFeedAdapter.Item.video(video));
                 }
             }
@@ -579,6 +769,33 @@ public class MobileBrowseActivity extends MobileActivity implements BrowseView, 
         }
     }
 
+    /**
+     * Lucide icons for the known sections, the TV icon for the others (e.g. pinned channels)
+     */
+    private static int getSectionIcon(BrowseSection section) {
+        switch (section.getId()) {
+            case MediaGroup.TYPE_HOME: return R.drawable.mobile_ic_home;
+            case MediaGroup.TYPE_SHORTS: return R.drawable.mobile_ic_shorts;
+            case MediaGroup.TYPE_SUBSCRIPTIONS: return R.drawable.mobile_ic_subscriptions;
+            case MediaGroup.TYPE_HISTORY: return R.drawable.mobile_ic_history;
+            case MediaGroup.TYPE_SETTINGS: return R.drawable.mobile_ic_settings;
+            case MediaGroup.TYPE_NOTIFICATIONS: return R.drawable.mobile_ic_bell;
+            case MediaGroup.TYPE_CHANNEL_UPLOADS: return R.drawable.mobile_ic_sec_channels;
+            case MediaGroup.TYPE_USER_PLAYLISTS: return R.drawable.mobile_ic_sec_playlists;
+            case MediaGroup.TYPE_MY_VIDEOS: return R.drawable.mobile_ic_sec_my_videos;
+            case MediaGroup.TYPE_KIDS_HOME: return R.drawable.mobile_ic_sec_kids;
+            case MediaGroup.TYPE_MUSIC: return R.drawable.mobile_ic_sec_music;
+            case MediaGroup.TYPE_GAMING: return R.drawable.mobile_ic_sec_gaming;
+            case MediaGroup.TYPE_NEWS: return R.drawable.mobile_ic_sec_news;
+            case MediaGroup.TYPE_LIVE: return R.drawable.mobile_ic_sec_live;
+            case MediaGroup.TYPE_SPORTS: return R.drawable.mobile_ic_sec_sports;
+            case MediaGroup.TYPE_TRENDING: return R.drawable.mobile_ic_sec_trending;
+            case MediaGroup.TYPE_PLAYBACK_QUEUE: return R.drawable.mobile_ic_sec_queue;
+            case MediaGroup.TYPE_BLOCKED_CHANNELS: return R.drawable.mobile_ic_sec_blocked;
+            default: return section.getResId();
+        }
+    }
+
     private boolean isYouRoot() {
         return mCurrentTab == TAB_YOU && (mCurrentSection == null || mCurrentSection.getId() == MediaGroup.TYPE_HISTORY);
     }
@@ -597,7 +814,7 @@ public class MobileBrowseActivity extends MobileActivity implements BrowseView, 
         SettingsItem item = mLibraryItems.get(section.getId());
 
         if (item == null || !TextUtils.equals(item.title, section.getTitle())) {
-            item = new SettingsItem(section.getTitle(), () -> openSection(section), section.getResId());
+            item = new SettingsItem(section.getTitle(), () -> openSection(section), getSectionIcon(section));
             mLibraryItems.put(section.getId(), item);
         }
 
