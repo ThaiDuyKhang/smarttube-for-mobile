@@ -108,4 +108,5 @@
     <string name="mobile_theme_light">Light theme</string>
     <string name="mobile_theme_dark">Dark theme</string>
     <string name="mobile_theme_applying">Applying the theme…</string>
+    <string name="mobile_new_to_you">New to you</string>
 </resources>

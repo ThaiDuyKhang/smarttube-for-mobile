@@ -71,6 +71,8 @@ public class MobileBrowseActivity extends MobileActivity implements BrowseView, 
     private int mLastHomeSectionId = MediaGroup.TYPE_HOME;
     private int mCurrentTab = TAB_HOME;
     private boolean mIsFirstSectionSelected;
+    private boolean mIsNewToYou;
+    private long mNewToYouSeed;
     private View mHeader;
     private View mSubsHeader;
     private LinearLayout mSubsChannels;
@@ -413,6 +415,7 @@ public class MobileBrowseActivity extends MobileActivity implements BrowseView, 
 
         mCurrentSection = section;
         mCurrentTab = getTab(section);
+        mIsNewToYou = false;
 
         if (mCurrentTab == TAB_HOME) {
             mLastHomeSectionId = section.getId();
@@ -493,12 +496,8 @@ public class MobileBrowseActivity extends MobileActivity implements BrowseView, 
         // Keep the explore button (first child)
         mChips.removeViews(1, mChips.getChildCount() - 1);
 
-        for (BrowseSection section : mSections) {
-            if (!isChipSection(section)) {
-                continue;
-            }
-
-            boolean selected = mCurrentTab == TAB_HOME && mCurrentSection != null && mCurrentSection.getId() == section.getId();
+        for (BrowseSection section : getChipSections()) {
+            boolean selected = mCurrentTab == TAB_HOME && mCurrentSection != null && mCurrentSection.getId() == section.getId() && !mIsNewToYou;
             TextView chip = new TextView(this);
             chip.setText(section.getId() == MediaGroup.TYPE_HOME ? getString(R.string.mobile_all) : section.getTitle());
             chip.setTextSize(14);
@@ -514,6 +513,90 @@ public class MobileBrowseActivity extends MobileActivity implements BrowseView, 
             lp.setMarginStart(dp(8));
             mChips.addView(chip, lp);
         }
+
+        // Last chip: recent videos you haven't watched, in a random order (from the Home recommendations)
+        BrowseSection home = findSection(MediaGroup.TYPE_HOME);
+        if (home != null) {
+            boolean selected = mCurrentTab == TAB_HOME && mIsNewToYou;
+            TextView chip = new TextView(this);
+            chip.setText(R.string.mobile_new_to_you);
+            chip.setTextSize(14);
+            chip.setGravity(Gravity.CENTER);
+            chip.setSingleLine(true);
+            chip.setPadding(dp(12), 0, dp(12), 0);
+            chip.setBackgroundResource(selected ? R.drawable.mobile_chip_selected_bg : R.drawable.mobile_chip_bg);
+            chip.setTextColor(ContextCompat.getColor(this, selected ? R.color.mobile_text_on_light : R.color.mobile_text));
+            chip.setOnClickListener(v -> openNewToYou(home));
+            LinearLayout.LayoutParams lp = new LinearLayout.LayoutParams(ViewGroup.LayoutParams.WRAP_CONTENT, dp(32));
+            lp.setMarginStart(dp(8));
+            mChips.addView(chip, lp);
+        }
+    }
+
+    /**
+     * Chip order: Music takes the place of Kids (Kids moves to Music's place)
+     */
+    private List<BrowseSection> getChipSections() {
+        List<BrowseSection> chips = new ArrayList<>();
+        for (BrowseSection section : mSections) {
+            if (isChipSection(section)) {
+                chips.add(section);
+            }
+        }
+
+        int kids = -1;
+        int music = -1;
+        for (int i = 0; i < chips.size(); i++) {
+            if (chips.get(i).getId() == MediaGroup.TYPE_KIDS_HOME) kids = i;
+            if (chips.get(i).getId() == MediaGroup.TYPE_MUSIC) music = i;
+        }
+        if (kids != -1 && music != -1 && music > kids) {
+            java.util.Collections.swap(chips, kids, music);
+        }
+
+        return chips;
+    }
+
+    private void openNewToYou(BrowseSection home) {
+        mNewToYouSeed = new java.util.Random().nextLong(); // a new order every time
+        openSection(home);
+        mIsNewToYou = true;
+        updateChips();
+        rebuildFeed();
+    }
+
+    /**
+     * Recent (about a month) and not watched yet
+     */
+    private static boolean isNewToYou(Video video) {
+        if (video.percentWatched > 0 || video.isUpcoming) {
+            return false;
+        }
+
+        if (video.isLive) {
+            return true;
+        }
+
+        CharSequence second = video.getSecondTitle();
+        String text = second != null ? second.toString().toLowerCase() : "";
+        return text.contains("giây trước") || text.contains("phút trước") || text.contains("giờ trước") || text.contains("ngày trước")
+                || text.contains("tuần trước") || text.contains("1 tháng trước")
+                || text.matches(".*\\b(second|seconds|minute|minutes|hour|hours|day|days|week|weeks) ago.*")
+                || text.matches(".*\\b1 month ago.*");
+    }
+
+    /**
+     * Shuffles each page on its own: the videos already shown don't move when the next page comes
+     */
+    private List<Video> shuffleNewToYou(List<Video> videos) {
+        List<Video> result = new ArrayList<>();
+        for (Video video : videos) {
+            if (isNewToYou(video)) {
+                result.add(video);
+            }
+        }
+        java.util.Collections.shuffle(result, new java.util.Random(mNewToYouSeed ^ (videos.isEmpty() ? 0 : String.valueOf(videos.get(0).videoId).hashCode())));
+        return result;
     }
 
     // ------------------------------- Explore menu (drawer) -------------------------------
@@ -762,12 +845,16 @@ public class MobileBrowseActivity extends MobileActivity implements BrowseView, 
                 continue;
             }
 
-            if ((showTitles || block.isShorts) && !TextUtils.isEmpty(block.title)) {
-                items.add(MobileFeedAdapter.Item.header(block.title, block));
-            }
-
             List<Video> videos = block.videos;
-            if (mCurrentTab == TAB_SUBSCRIPTIONS && mSubsFilter != FILTER_ALL) {
+            if (mIsNewToYou && mCurrentTab == TAB_HOME) {
+                if (block.isShorts) {
+                    continue;
+                }
+                videos = shuffleNewToYou(block.videos);
+                if (videos.isEmpty()) {
+                    continue;
+                }
+            } else if (mCurrentTab == TAB_SUBSCRIPTIONS && mSubsFilter != FILTER_ALL) {
                 videos = new ArrayList<>();
                 for (Video video : block.videos) {
                     if (matchesSubsFilter(video, block.isShorts)) {
@@ -777,6 +864,11 @@ public class MobileBrowseActivity extends MobileActivity implements BrowseView, 
                 if (videos.isEmpty()) {
                     continue;
                 }
+            }
+
+            // Shelf titles (not on "New to you": one mixed list)
+            if ((showTitles || block.isShorts) && !TextUtils.isEmpty(block.title) && !mIsNewToYou) {
+                items.add(MobileFeedAdapter.Item.header(block.title, block));
             }
 
             if (block.isShorts) {
