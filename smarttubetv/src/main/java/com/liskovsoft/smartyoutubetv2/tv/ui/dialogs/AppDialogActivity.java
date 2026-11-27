@@ -112,7 +112,7 @@ public class AppDialogActivity extends MotherActivity {
             float radius = 16 * density;
             float bottom = isLandscape ? radius : 0;
             background.setCornerRadii(new float[] {radius, radius, radius, radius, bottom, bottom, bottom, bottom});
-            background.setColor(0xFF212121);
+            background.setColor(androidx.core.content.ContextCompat.getColor(this, R.color.mobile_surface));
             pane.setBackground(background);
             if (VERSION.SDK_INT >= 21) {
                 pane.setOutlineProvider(ViewOutlineProvider.BACKGROUND);
@@ -129,7 +129,7 @@ public class AppDialogActivity extends MotherActivity {
                 handle.setTag("mobile_sheet_handle");
                 GradientDrawable shape = new GradientDrawable();
                 shape.setCornerRadius(2 * density);
-                shape.setColor(0x66FFFFFF);
+                shape.setColor(androidx.core.content.ContextCompat.getColor(this, R.color.mobile_text_secondary));
                 handle.setBackground(shape);
                 container.addView(handle);
             }
@@ -148,7 +148,20 @@ public class AppDialogActivity extends MotherActivity {
     }
 
     @Override
+    public boolean isNativeUi() {
+        // Phones: phone density and the light/dark theme of the app (see MotherActivity.attachBaseContext)
+        return IS_MOBILE_BUILD;
+    }
+
+    private static final boolean IS_MOBILE_BUILD = "stmobile".equals(com.liskovsoft.smartyoutubetv2.tv.BuildConfig.FLAVOR);
+
+    @Override
     protected void initTheme() {
+        if (IS_MOBILE_BUILD) {
+            setTheme(R.style.MobileDialogTheme);
+            return;
+        }
+
         int settingsThemeResId = MainUIData.instance(this).getColorScheme().settingsThemeResId;
         if (settingsThemeResId > 0) {
             setTheme(settingsThemeResId);
@@ -234,6 +247,10 @@ public class AppDialogActivity extends MotherActivity {
 
         // Destroy dialog when BACK is pressed. NoHistory isn't reliable if combined with singleInstance
         finishReally();
+
+        if (IS_MOBILE_BUILD) {
+            overridePendingTransition(0, R.anim.mobile_sheet_out); // slides down
+        }
     }
 
     @Override

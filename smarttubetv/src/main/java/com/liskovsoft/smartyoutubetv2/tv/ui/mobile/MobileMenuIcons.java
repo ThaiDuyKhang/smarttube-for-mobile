@@ -20,111 +20,37 @@ public final class MobileMenuIcons {
 
     // Resource name keywords -> icon (the first match wins, the specific ones first)
     private static final Object[][] RULES = {
+            // Actions on a video or a channel: icons of their own
             {"dislike", R.drawable.mobile_ic_m_dislike},
             {"like", R.drawable.mobile_ic_m_like},
             {"unsubscribe", R.drawable.mobile_ic_m_block},
             {"subscri", R.drawable.mobile_ic_m_bell},
-            {"notification", R.drawable.mobile_ic_m_bell},
             {"not_interested", R.drawable.mobile_ic_m_eye_off},
             {"dont_like", R.drawable.mobile_ic_m_eye_off},
             {"exclude", R.drawable.mobile_ic_m_eye_off},
-            {"hide", R.drawable.mobile_ic_m_eye_off},
-            {"block", R.drawable.mobile_ic_m_block},
-            {"sponsor", R.drawable.mobile_ic_m_shield},
-            {"dearrow", R.drawable.mobile_ic_m_dearrow},
             {"remove", R.drawable.mobile_ic_m_trash},
             {"delete", R.drawable.mobile_ic_m_trash},
-            {"clear", R.drawable.mobile_ic_m_trash},
             {"unpin", R.drawable.mobile_ic_m_pin},
-            {"pin", R.drawable.mobile_ic_m_pin},
-            {"playlist", R.drawable.mobile_ic_m_playlist},
-            {"queue", R.drawable.mobile_ic_m_playlist},
-            {"channel", R.drawable.mobile_ic_m_channel},
+            {"pin_", R.drawable.mobile_ic_m_pin},
+            {"add_to_playlist", R.drawable.mobile_ic_m_playlist},
+            {"playlist_add", R.drawable.mobile_ic_m_playlist},
+            {"open_playlist", R.drawable.mobile_ic_m_playlist},
+            {"open_channel", R.drawable.mobile_ic_m_channel},
             {"share", R.drawable.mobile_ic_m_share},
-            {"link", R.drawable.mobile_ic_m_share},
             {"download", R.drawable.mobile_ic_m_download},
             {"comment", R.drawable.mobile_ic_m_comment},
-            {"chat", R.drawable.mobile_ic_m_comment},
-            {"description", R.drawable.mobile_ic_m_info},
-            {"subtitle", R.drawable.mobile_ic_m_captions},
-            {"caption", R.drawable.mobile_ic_m_captions},
-            {"audio_lang", R.drawable.mobile_ic_m_language},
-            {"audio_shift", R.drawable.mobile_ic_m_clock},
-            {"audio_delay", R.drawable.mobile_ic_m_clock},
-            {"pitch", R.drawable.mobile_ic_m_music},
-            {"audio", R.drawable.mobile_ic_m_volume},
-            {"sound", R.drawable.mobile_ic_m_volume},
-            {"volume", R.drawable.mobile_ic_m_volume},
-            {"speed", R.drawable.mobile_ic_m_gauge},
-            {"frame_rate", R.drawable.mobile_ic_m_gauge},
-            {"afr", R.drawable.mobile_ic_m_gauge},
-            {"quality", R.drawable.mobile_ic_m_quality},
-            {"video_format", R.drawable.mobile_ic_m_quality},
-            {"video_preset", R.drawable.mobile_ic_m_quality},
-            {"format", R.drawable.mobile_ic_m_quality},
-            {"preset", R.drawable.mobile_ic_m_quality},
-            {"zoom", R.drawable.mobile_ic_m_zoom},
-            {"aspect", R.drawable.mobile_ic_m_zoom},
-            {"resize", R.drawable.mobile_ic_m_zoom},
-            {"rotat", R.drawable.mobile_ic_m_zoom},
-            {"flip", R.drawable.mobile_ic_m_zoom},
-            {"buffer", R.drawable.mobile_ic_m_network},
-            {"network", R.drawable.mobile_ic_m_network},
-            {"engine", R.drawable.mobile_ic_m_network},
-            {"sleep", R.drawable.mobile_ic_m_timer},
-            {"timer", R.drawable.mobile_ic_m_timer},
-            {"time", R.drawable.mobile_ic_m_clock},
-            {"repeat", R.drawable.mobile_ic_m_repeat},
-            {"loop", R.drawable.mobile_ic_m_repeat},
-            {"pip", R.drawable.mobile_ic_m_pip},
-            {"background", R.drawable.mobile_ic_m_headphones},
-            {"screen_off", R.drawable.mobile_ic_m_lock},
-            {"dimming", R.drawable.mobile_ic_m_lock},
-            {"stats", R.drawable.mobile_ic_m_stats},
-            {"debug", R.drawable.mobile_ic_m_stats},
-            {"history", R.drawable.mobile_ic_m_history},
-            {"watched", R.drawable.mobile_ic_m_eye},
-            {"search", R.drawable.mobile_ic_m_search},
-            {"voice", R.drawable.mobile_ic_m_keyboard},
-            {"keyboard", R.drawable.mobile_ic_m_keyboard},
-            {"language", R.drawable.mobile_ic_m_language},
-            {"country", R.drawable.mobile_ic_m_language},
-            {"locale", R.drawable.mobile_ic_m_language},
-            {"account", R.drawable.mobile_ic_m_user},
-            {"password", R.drawable.mobile_ic_m_lock},
-            {"color", R.drawable.mobile_ic_m_palette},
-            {"style", R.drawable.mobile_ic_m_palette},
-            {"theme", R.drawable.mobile_ic_m_palette},
-            {"font", R.drawable.mobile_ic_m_text},
-            {"text", R.drawable.mobile_ic_m_text},
-            {"layout", R.drawable.mobile_ic_m_layout},
-            {"ui", R.drawable.mobile_ic_m_layout},
-            {"interface", R.drawable.mobile_ic_m_layout},
-            {"menu", R.drawable.mobile_ic_m_layout},
-            {"backup", R.drawable.mobile_ic_m_cloud},
-            {"restore", R.drawable.mobile_ic_m_cloud},
-            {"update", R.drawable.mobile_ic_m_download},
-            {"about", R.drawable.mobile_ic_m_info},
-            {"info", R.drawable.mobile_ic_m_info},
-            {"open", R.drawable.mobile_ic_m_open},
-            {"add", R.drawable.mobile_ic_m_add},
-            {"create", R.drawable.mobile_ic_m_add},
-            {"move", R.drawable.mobile_ic_m_move},
-            {"sort", R.drawable.mobile_ic_m_move},
-            {"order", R.drawable.mobile_ic_m_move},
-            {"play", R.drawable.mobile_ic_m_play},
-            {"player", R.drawable.mobile_ic_m_video},
-            {"video", R.drawable.mobile_ic_m_video},
-            {"full", R.drawable.mobile_ic_m_fullscreen},
-            {"setting", R.drawable.mobile_ic_m_settings},
-            {"general", R.drawable.mobile_ic_m_settings},
+            {"mark_as_watched", R.drawable.mobile_ic_m_eye},
+            {"play_video", R.drawable.mobile_ic_m_play},
+            {"add_account", R.drawable.mobile_ic_m_user},
+            {"remove_account", R.drawable.mobile_ic_m_block},
     };
 
     private MobileMenuIcons() {
     }
 
     /**
-     * Icon for a menu row by its title. Never 0: rows without a match get a neutral icon.
+     * Icon for a menu row by its title: the actions (like, share, add to playlist...) have their own icon,
+     * the other rows share one icon. Never 0.
      */
     public static int forTitle(Context context, CharSequence title) {
         String name = findResourceName(context, title);
@@ -138,7 +64,8 @@ public final class MobileMenuIcons {
             }
         }
 
-        return R.drawable.mobile_ic_m_list;
+        // Settings and the other rows: one icon for all, like the lists of a settings page
+        return R.drawable.mobile_ic_m_uniform;
     }
 
     private static String findResourceName(Context context, CharSequence title) {

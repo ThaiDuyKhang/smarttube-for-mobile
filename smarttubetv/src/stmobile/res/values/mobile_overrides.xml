@@ -1,5 +1,7 @@
 <?xml version="1.0" encoding="utf-8"?>
-<!-- Mobile build: dialogs as dark bottom sheets (see AppDialogActivity) -->
+<!-- Mobile build: dialogs as bottom sheets in the colors of the light/dark theme (see AppDialogActivity) -->
 <resources>
-    <color name="lb_preference_decor_list_background">#212121</color>
+    <color name="lb_preference_decor_list_background">@color/mobile_surface</color>
+    <color name="lb_preference_item_primary_text_color_default">@color/mobile_text</color>
+    <color name="lb_preference_item_secondary_text_color_default">@color/mobile_text_secondary</color>
 </resources>

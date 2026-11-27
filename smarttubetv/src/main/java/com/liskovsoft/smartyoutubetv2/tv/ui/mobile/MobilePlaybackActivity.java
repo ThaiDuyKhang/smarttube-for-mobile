@@ -797,6 +797,7 @@ public class MobilePlaybackActivity extends MobileActivity implements PlaybackVi
         android.view.Window window = dialog.getWindow();
         if (window != null) {
             window.setBackgroundDrawable(new android.graphics.drawable.ColorDrawable(0));
+            window.setWindowAnimations(R.style.MobileDialogWindowAnimation); // slides up and down
             int screenWidth = mRoot.getWidth();
             window.setLayout(isLandscape ? Math.max(dp(360), (int) (screenWidth * 0.46f)) : ViewGroup.LayoutParams.MATCH_PARENT,
                     ViewGroup.LayoutParams.WRAP_CONTENT);

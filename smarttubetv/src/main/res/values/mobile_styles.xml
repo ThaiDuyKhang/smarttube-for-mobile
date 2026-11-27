@@ -69,4 +69,32 @@
         <item name="android:textColor">@color/mobile_text</item>
         <item name="android:textSize">14sp</item>
     </style>
+
+    <!-- Menus and settings dialogs (bottom sheets): the colors of the light or dark theme -->
+    <style name="MobileDialogTheme" parent="App.Theme.Leanback.Preferences">
+        <item name="android:textColorPrimary">@color/mobile_text</item>
+        <item name="android:textColorSecondary">@color/mobile_text_secondary</item>
+        <item name="android:colorAccent" tools:targetApi="21">@color/mobile_accent</item>
+        <item name="android:colorControlHighlight" tools:targetApi="21">@color/mobile_ripple</item>
+        <item name="android:selectableItemBackground">@drawable/mobile_ripple</item>
+        <item name="defaultBrandColor">@color/mobile_surface</item>
+        <item name="android:windowAnimationStyle">@style/MobileSheetAnimation</item>
+    </style>
+
+    <!-- Sheets slide up when opened and down when closed -->
+    <style name="MobileSheetAnimation" parent="@android:style/Animation.Activity">
+        <item name="android:activityOpenEnterAnimation">@anim/mobile_sheet_in</item>
+        <item name="android:activityOpenExitAnimation">@anim/mobile_none</item>
+        <item name="android:activityCloseEnterAnimation">@anim/mobile_none</item>
+        <item name="android:activityCloseExitAnimation">@anim/mobile_sheet_out</item>
+        <item name="android:taskOpenEnterAnimation">@anim/mobile_sheet_in</item>
+        <item name="android:taskCloseExitAnimation">@anim/mobile_sheet_out</item>
+        <item name="android:taskToFrontEnterAnimation">@anim/mobile_sheet_in</item>
+    </style>
+
+    <!-- The quick settings of the player (a dialog inside the player) -->
+    <style name="MobileDialogWindowAnimation">
+        <item name="android:windowEnterAnimation">@anim/mobile_sheet_in</item>
+        <item name="android:windowExitAnimation">@anim/mobile_sheet_out</item>
+    </style>
 </resources>

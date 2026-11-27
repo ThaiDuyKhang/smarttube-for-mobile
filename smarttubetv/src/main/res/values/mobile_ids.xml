@@ -2,4 +2,5 @@
 <resources>
     <!-- Mobile build: view tags -->
     <item name="mobile_tab_avatar" type="id" />
+    <item name="mobile_rounded" type="id" />
 </resources>

@@ -406,8 +406,31 @@ public class MobileFeedAdapter extends RecyclerView.Adapter<RecyclerView.ViewHol
         view.findViewById(R.id.mobile_suggestion_fill).setOnClickListener(v -> mCallback.onSuggestionFillClicked(text));
     }
 
+    /**
+     * Rounded thumbnails like the YouTube app (cards that don't fill the screen width: small cards, lists, grid, shorts)
+     */
+    @android.annotation.TargetApi(21)
+    static void roundThumb(View thumbFrame) {
+        if (android.os.Build.VERSION.SDK_INT < 21 || Boolean.TRUE.equals(thumbFrame.getTag(R.id.mobile_rounded))) {
+            return;
+        }
+
+        thumbFrame.setTag(R.id.mobile_rounded, true);
+        float radius = 12 * thumbFrame.getResources().getDisplayMetrics().density;
+        thumbFrame.setOutlineProvider(new android.view.ViewOutlineProvider() {
+            @Override
+            public void getOutline(View view, android.graphics.Outline outline) {
+                int screenWidth = view.getResources().getDisplayMetrics().widthPixels;
+                boolean isFullWidth = view.getWidth() > screenWidth * 0.9f;
+                outline.setRoundRect(0, 0, view.getWidth(), view.getHeight(), isFullWidth ? 0 : radius);
+            }
+        });
+        thumbFrame.setClipToOutline(true);
+    }
+
     private void bindVideo(View view, Video video) {
         AspectRatioImageView thumb = view.findViewById(R.id.mobile_thumb);
+        roundThumb((View) thumb.getParent());
         loadImage(thumb, video.getCardImageUrl());
 
         TextView badge = view.findViewById(R.id.mobile_badge);
@@ -671,6 +694,7 @@ public class MobileFeedAdapter extends RecyclerView.Adapter<RecyclerView.ViewHol
             Video video = mVideos.get(position);
             View view = holder.itemView;
             loadImage(view.findViewById(R.id.mobile_short_thumb), video.getCardImageUrl());
+            roundThumb((View) view.findViewById(R.id.mobile_short_thumb).getParent());
             ((TextView) view.findViewById(R.id.mobile_short_title)).setText(video.getTitle());
             setTextOrHide(view.findViewById(R.id.mobile_short_meta), video.getSecondTitle());
             view.setOnClickListener(v -> mCallback.onVideoClicked(video));

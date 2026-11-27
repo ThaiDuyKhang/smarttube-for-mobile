@@ -74,8 +74,10 @@ public class MobileBrowseActivity extends MobileActivity implements BrowseView, 
     private boolean mIsNewToYou;
     private boolean mIsHistoryPage;
     private final Object mLibraryHeaderOwner = new Object();
-    private List<Video> mYouPlaylists;
-    private boolean mIsYouPlaylistsLoading;
+    private int mYouChip;
+    private String mYouAccountKey;
+    private final java.util.Map<Integer, List<Video>> mYouContent = new java.util.HashMap<>();
+    private final List<Integer> mYouContentLoading = new ArrayList<>();
     private long mNewToYouSeed;
     private View mHeader;
     private View mSubsHeader;
@@ -156,8 +158,14 @@ public class MobileBrowseActivity extends MobileActivity implements BrowseView, 
 
         mIsCreated = false;
 
-        mYouPlaylists = null; // the account could be changed
-        mIsYouPlaylistsLoading = false;
+        // Another account: the You page lists are loaded again
+        Account account = getAccount();
+        String accountKey = account != null ? account.getName() + "|" + account.getEmail() : null;
+        if (!TextUtils.equals(accountKey, mYouAccountKey)) {
+            mYouAccountKey = accountKey;
+            mYouContent.clear();
+            mYouContentLoading.clear();
+        }
         updateTabs();
         if (mCurrentTab == TAB_YOU) {
             rebuildFeed(); // the account could be changed
@@ -705,15 +713,17 @@ public class MobileBrowseActivity extends MobileActivity implements BrowseView, 
 
         mDrawerScrim.setAlpha(0);
         mDrawerScrim.setVisibility(View.VISIBLE);
-        mDrawerScrim.animate().alpha(1).setDuration(200).start();
+        mDrawerScrim.animate().alpha(1).setDuration(260).start();
         mDrawer.setVisibility(View.VISIBLE);
         mDrawer.setTranslationX(-dp(304));
-        mDrawer.animate().translationX(0).setDuration(200).start();
+        mDrawer.animate().translationX(0).setDuration(260)
+                .setInterpolator(new android.view.animation.DecelerateInterpolator(2f)).start(); // slides in smoothly
     }
 
     private void closeDrawer() {
         mDrawerScrim.animate().alpha(0).setDuration(200).withEndAction(() -> mDrawerScrim.setVisibility(View.GONE)).start();
-        mDrawer.animate().translationX(-dp(304)).setDuration(200).withEndAction(() -> mDrawer.setVisibility(View.GONE)).start();
+        mDrawer.animate().translationX(-dp(304)).setDuration(220)
+                .setInterpolator(new android.view.animation.AccelerateInterpolator(1.5f)).withEndAction(() -> mDrawer.setVisibility(View.GONE)).start();
     }
 
     // ------------------------------- Feed -------------------------------
@@ -1020,11 +1030,15 @@ public class MobileBrowseActivity extends MobileActivity implements BrowseView, 
         items.add(MobileFeedAdapter.Item.header(getString(R.string.mobile_library), mLibraryHeaderOwner));
         items.add(MobileFeedAdapter.Item.chips(mLibraryHeaderOwner));
 
+        // The chosen library chip: its list right here (like the YouTube app)
         if (MobileUi.isSignedIn()) {
-            loadYouPlaylists();
-            if (mYouPlaylists != null) {
-                for (Video playlist : mYouPlaylists) {
-                    items.add(MobileFeedAdapter.Item.compact(playlist));
+            int chip = getYouChip();
+            List<Video> content = mYouContent.get(chip);
+            if (content == null) {
+                loadYouContent(chip);
+            } else {
+                for (Video video : content) {
+                    items.add(chip == MediaGroup.TYPE_CHANNEL_UPLOADS ? MobileFeedAdapter.Item.channel(video) : MobileFeedAdapter.Item.compact(video));
                 }
             }
         }
@@ -1046,10 +1060,20 @@ public class MobileBrowseActivity extends MobileActivity implements BrowseView, 
         }
         MobileOrder.sort(this, ORDER_LIBRARY, library, section -> "section_" + section.getId());
 
+        int selectedChip = getYouChip();
         for (BrowseSection section : library) {
+            boolean isInline = isInlineYouChip(section.getId());
             TextView chip = createChip(section.getId() == MediaGroup.TYPE_CHANNEL_UPLOADS ?
-                    getString(R.string.mobile_all_subscriptions) : section.getTitle(), false);
-            chip.setOnClickListener(v -> openSection(section));
+                    getString(R.string.mobile_all_subscriptions) : section.getTitle(), isInline && section.getId() == selectedChip);
+            chip.setOnClickListener(v -> {
+                if (isInline) {
+                    // Shows its list below, without leaving the page
+                    mYouChip = section.getId();
+                    rebuildFeed();
+                } else {
+                    openSection(section);
+                }
+            });
             LinearLayout.LayoutParams lp = new LinearLayout.LayoutParams(ViewGroup.LayoutParams.WRAP_CONTENT, dp(32));
             lp.setMarginStart(dp(8));
             chips.addView(chip, lp);
@@ -1057,22 +1081,56 @@ public class MobileBrowseActivity extends MobileActivity implements BrowseView, 
         }
     }
 
-    private void loadYouPlaylists() {
-        if (mIsYouPlaylistsLoading) {
+    private static boolean isInlineYouChip(int sectionId) {
+        return sectionId == MediaGroup.TYPE_USER_PLAYLISTS || sectionId == MediaGroup.TYPE_CHANNEL_UPLOADS || sectionId == MediaGroup.TYPE_MY_VIDEOS;
+    }
+
+    /**
+     * The chosen library chip of the You page (playlists by default, like the YouTube app)
+     */
+    private int getYouChip() {
+        if (mYouChip == 0 || findSection(mYouChip) == null) {
+            mYouChip = findSection(MediaGroup.TYPE_USER_PLAYLISTS) != null ? MediaGroup.TYPE_USER_PLAYLISTS : MediaGroup.TYPE_CHANNEL_UPLOADS;
+        }
+        return mYouChip;
+    }
+
+    private void loadYouContent(int sectionId) {
+        if (mYouContentLoading.contains(sectionId)) {
             return;
         }
 
-        mIsYouPlaylistsLoading = true;
-        com.liskovsoft.sharedutils.rx.RxHelper.execute(
-                com.liskovsoft.youtubeapi.service.YouTubeServiceManager.instance().getContentService().getPlaylistsObserve(),
+        com.liskovsoft.mediaserviceinterfaces.ContentService service =
+                com.liskovsoft.youtubeapi.service.YouTubeServiceManager.instance().getContentService();
+        io.reactivex.Observable<com.liskovsoft.mediaserviceinterfaces.data.MediaGroup> observable;
+        switch (sectionId) {
+            case MediaGroup.TYPE_USER_PLAYLISTS:
+                observable = service.getPlaylistsObserve();
+                break;
+            case MediaGroup.TYPE_CHANNEL_UPLOADS:
+                observable = service.getSubscribedChannelsByLastViewedObserve();
+                break;
+            case MediaGroup.TYPE_MY_VIDEOS:
+                observable = service.getMyVideosObserve();
+                break;
+            default:
+                return;
+        }
+
+        mYouContentLoading.add(sectionId);
+        com.liskovsoft.sharedutils.rx.RxHelper.execute(observable,
                 group -> runOnUiThread(() -> {
-                    List<Video> playlists = group != null ? VideoGroup.from(group).getVideos() : null;
-                    mYouPlaylists = playlists != null ? new ArrayList<>(playlists) : new ArrayList<>();
+                    List<Video> videos = group != null ? VideoGroup.from(group).getVideos() : null;
+                    mYouContent.put(sectionId, videos != null ? new ArrayList<>(videos) : new ArrayList<>());
+                    mYouContentLoading.remove((Integer) sectionId);
                     if (isYouRoot()) {
                         rebuildFeed();
                     }
                 }),
-                error -> runOnUiThread(() -> mIsYouPlaylistsLoading = false));
+                error -> runOnUiThread(() -> {
+                    mYouContent.put(sectionId, new ArrayList<>());
+                    mYouContentLoading.remove((Integer) sectionId);
+                }));
     }
 
     private String getChannelSortTitle() {
