@@ -79,6 +79,45 @@ public class ViewManager {
         }
     }
 
+    /**
+     * Chooses another activity for a view at start (e.g. a variant of the screen that opens in landscape).
+     * The variant must be registered with {@link #registerVariant}.
+     */
+    public interface ActivityChooser {
+        Class<? extends Activity> choose(Class<?> viewClass, Class<? extends Activity> registered);
+    }
+
+    private ActivityChooser mActivityChooser;
+    private final Map<Class<? extends Activity>, Class<?>> mVariants = new HashMap<>();
+
+    public void setActivityChooser(ActivityChooser chooser) {
+        mActivityChooser = chooser;
+    }
+
+    /**
+     * Another activity that shows the same view (it is the view's activity while it runs)
+     */
+    public void registerVariant(Class<?> viewClass, Class<? extends Activity> activityClass, Class<? extends Activity> parentActivityClass) {
+        mVariants.put(activityClass, viewClass);
+
+        if (parentActivityClass != null) {
+            mParentMapping.put(activityClass, parentActivityClass);
+        }
+    }
+
+    private Class<? extends Activity> chooseActivity(Class<?> viewClass) {
+        Class<? extends Activity> activityClass = mViewMapping.get(viewClass);
+
+        if (activityClass != null && mActivityChooser != null) {
+            Class<? extends Activity> chosen = mActivityChooser.choose(viewClass, activityClass);
+            if (chosen != null) {
+                activityClass = chosen;
+            }
+        }
+
+        return activityClass;
+    }
+
     public void unregister(Class<?> viewClass) {
         mViewMapping.remove(viewClass);
     }
@@ -88,6 +127,10 @@ public class ViewManager {
     }
     
     public Class<?> getView(Class<? extends Activity> activityClass) {
+        if (mVariants.containsKey(activityClass)) {
+            return mVariants.get(activityClass);
+        }
+
         return Helpers.getKey(mViewMapping, activityClass);
     }
 
@@ -120,7 +163,7 @@ public class ViewManager {
         //    return;
         //}
 
-        Class<?> activityClass = mViewMapping.get(viewClass);
+        Class<?> activityClass = chooseActivity(viewClass);
 
         if (activityClass != null) {
             startActivity(activityClass);
@@ -365,7 +408,7 @@ public class ViewManager {
             }
         }
 
-        return null;
+        return mVariants.get(topActivity);
     }
 
     /**
@@ -425,7 +468,7 @@ public class ViewManager {
     }
 
     public boolean isViewPending(Class<?> viewClass) {
-        return isNewViewPending() && mViewMapping.get(viewClass) == mPendingActivityClass;
+        return isNewViewPending() && (mViewMapping.get(viewClass) == mPendingActivityClass || mVariants.get(mPendingActivityClass) == viewClass);
     }
 
     public void refreshCurrentView() {

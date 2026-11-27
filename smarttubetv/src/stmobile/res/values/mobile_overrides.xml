@@ -4,4 +4,8 @@
     <color name="lb_preference_decor_list_background">@color/mobile_surface</color>
     <color name="lb_preference_item_primary_text_color_default">@color/mobile_text</color>
     <color name="lb_preference_item_secondary_text_color_default">@color/mobile_text_secondary</color>
+    <!-- Rows of the menus as dense as the side menu of the main screen (one line: ~44dp) -->
+    <dimen name="lb_preference_item_text_space_top">11dp</dimen>
+    <dimen name="lb_preference_item_text_space_bottom">10dp</dimen>
+    <dimen name="lb_preference_item_primary_text_margin_bottom">1dp</dimen>
 </resources>

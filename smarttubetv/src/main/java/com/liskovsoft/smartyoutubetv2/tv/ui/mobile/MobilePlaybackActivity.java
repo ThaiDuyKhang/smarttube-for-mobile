@@ -901,7 +901,7 @@ public class MobilePlaybackActivity extends MobileActivity implements PlaybackVi
         row.setOrientation(LinearLayout.HORIZONTAL);
         row.setGravity(android.view.Gravity.CENTER_VERTICAL);
         row.setPadding(dp(20), 0, dp(20), 0);
-        row.setMinimumHeight(dp(52));
+        row.setMinimumHeight(dp(44));
         row.setBackgroundResource(R.drawable.mobile_ripple);
 
         android.widget.RadioButton radio = new android.widget.RadioButton(this);

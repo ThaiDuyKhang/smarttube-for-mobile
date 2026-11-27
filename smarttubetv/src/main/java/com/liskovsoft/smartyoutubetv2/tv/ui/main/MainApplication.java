@@ -38,6 +38,7 @@ import com.liskovsoft.smartyoutubetv2.common.utils.Utils;
 import com.liskovsoft.smartyoutubetv2.tv.ui.channel.ChannelActivity;
 import com.liskovsoft.smartyoutubetv2.tv.ui.channeluploads.ChannelUploadsActivity;
 import com.liskovsoft.smartyoutubetv2.tv.ui.dialogs.AppDialogActivity;
+import com.liskovsoft.smartyoutubetv2.tv.ui.dialogs.AppDialogActivityLandscape;
 import com.liskovsoft.smartyoutubetv2.tv.ui.dialogs.AppDialogActivityOpaque;
 import com.liskovsoft.smartyoutubetv2.tv.ui.playback.PlaybackActivity;
 import com.liskovsoft.smartyoutubetv2.tv.ui.search.tags.SearchTagsActivity;
@@ -120,6 +121,12 @@ public class MainApplication extends MultiDexApplication implements Configuratio
         viewManager.register(BrowseView.class, browseClass); // no parent, because it's root activity
         viewManager.register(PlaybackView.class, Utils.isMobileBuild(this) ? MobilePlaybackActivity.class : PlaybackActivity.class, browseClass);
         viewManager.register(AppDialogView.class, dialogClass, browseClass);
+        if (Utils.isMobileBuild(this)) {
+            // Menus opened over a landscape video open in landscape right away (no portrait frame then a rotation)
+            viewManager.registerVariant(AppDialogView.class, AppDialogActivityLandscape.class, browseClass);
+            viewManager.setActivityChooser((viewClass, registered) -> viewClass == AppDialogView.class && VERSION.SDK_INT != 26
+                    && AppDialogActivity.isPlayerLandscape(this) ? AppDialogActivityLandscape.class : null);
+        }
         viewManager.register(SearchView.class, Utils.isMobileBuild(this) ? MobileSearchActivity.class : SearchTagsActivity.class, browseClass);
         viewManager.register(SignInView.class, Utils.isMobileBuild(this) ? MobileSignInActivity.class : SignInActivity.class, browseClass);
         viewManager.register(AddDeviceView.class, Utils.isMobileBuild(this) ? MobileAddDeviceActivity.class : AddDeviceActivity.class, browseClass);

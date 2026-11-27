@@ -1402,6 +1402,16 @@ public class Utils {
         }
 
         try {
+            // Keep the orientation the manifest fixes for this screen (e.g. the menus opened over a landscape video)
+            ActivityInfo info = activity.getPackageManager().getActivityInfo(activity.getComponentName(), 0);
+            if (info.screenOrientation != ActivityInfo.SCREEN_ORIENTATION_UNSPECIFIED) {
+                return;
+            }
+        } catch (Exception e) {
+            // Not found: follow the device rotation
+        }
+
+        try {
             activity.setRequestedOrientation(ActivityInfo.SCREEN_ORIENTATION_USER);
         } catch (IllegalStateException e) {
             // Android 8.0 (api 26): Only fullscreen opaque activities can request orientation

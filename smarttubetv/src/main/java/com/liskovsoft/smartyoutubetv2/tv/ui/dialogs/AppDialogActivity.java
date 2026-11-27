@@ -57,15 +57,26 @@ public class AppDialogActivity extends MotherActivity {
      * (its own configuration doesn't follow the rotation, see MotherActivity, so ask the player).
      */
     private void applyPlayerOrientation() {
-        PlaybackView player = PlaybackPresenter.instance(this).getView();
-        boolean isPlayerLandscape = player instanceof MobilePlaybackActivity && !((MobilePlaybackActivity) player).isFinishing()
-                && ViewManager.instance(this).getTopView() == PlaybackView.class
-                && !(VERSION.SDK_INT >= 24 && ((MobilePlaybackActivity) player).isInPictureInPictureMode())
-                && ((MobilePlaybackActivity) player).isShownInLandscape();
+        if (this instanceof AppDialogActivityLandscape) {
+            return; // landscape from the manifest
+        }
+
         // Android 8.0 doesn't allow it on a translucent activity (crash): it rotates with the device there
         if (VERSION.SDK_INT != 26) {
-            setRequestedOrientation(isPlayerLandscape ? ActivityInfo.SCREEN_ORIENTATION_SENSOR_LANDSCAPE : ActivityInfo.SCREEN_ORIENTATION_UNSPECIFIED);
+            setRequestedOrientation(isPlayerLandscape(this) ? ActivityInfo.SCREEN_ORIENTATION_SENSOR_LANDSCAPE : ActivityInfo.SCREEN_ORIENTATION_UNSPECIFIED);
         }
+    }
+
+    /**
+     * The player is the top screen and is shown in landscape (its own configuration doesn't follow the rotation,
+     * see MotherActivity, so ask the player)
+     */
+    public static boolean isPlayerLandscape(android.content.Context context) {
+        PlaybackView player = PlaybackPresenter.instance(context).getView();
+        return player instanceof MobilePlaybackActivity && !((MobilePlaybackActivity) player).isFinishing()
+                && ViewManager.instance(context).getTopView() == PlaybackView.class
+                && !(VERSION.SDK_INT >= 24 && ((MobilePlaybackActivity) player).isInPictureInPictureMode())
+                && ((MobilePlaybackActivity) player).isShownInLandscape();
     }
 
     @Override
@@ -119,7 +130,20 @@ public class AppDialogActivity extends MotherActivity {
             lp.bottomMargin = bottomMargin;
             lp.gravity = Gravity.BOTTOM | Gravity.CENTER_HORIZONTAL;
             pane.setLayoutParams(lp);
-            pane.setPadding(0, (int) (16 * density), 0, 0); // room for the handle
+        }
+
+        // Room for the handle; the bottom of the sheet stays above the navigation bar (the window draws behind it)
+        // (the part of the window under the navigation bar: below the visible frame)
+        int navBar = 0;
+        if (!isLandscape) {
+            android.graphics.Rect visible = new android.graphics.Rect();
+            content.getWindowVisibleDisplayFrame(visible);
+            int[] location = new int[2];
+            content.getLocationOnScreen(location);
+            navBar = Math.max(0, location[1] + height - visible.bottom);
+        }
+        if (pane.getPaddingTop() != (int) (16 * density) || pane.getPaddingBottom() != navBar) {
+            pane.setPadding(0, (int) (16 * density), 0, navBar);
         }
 
         if (!(pane.getBackground() instanceof GradientDrawable) || isLandscape != mIsLandscapeSheet) {
@@ -187,6 +211,23 @@ public class AppDialogActivity extends MotherActivity {
                 }
             }
             return;
+        }
+
+        if (view instanceof androidx.leanback.widget.VerticalGridView && view.getTag(R.id.mobile_touch_list) == null) {
+            // TV lists keep the selected row at a key line in the middle and clamp the scroll around it: swiping back
+            // down could get stuck. On phones: the key line at the top edge, like a plain touch list.
+            view.setTag(R.id.mobile_touch_list, true);
+            androidx.leanback.widget.VerticalGridView grid = (androidx.leanback.widget.VerticalGridView) view;
+            grid.setWindowAlignment(androidx.leanback.widget.BaseGridView.WINDOW_ALIGN_BOTH_EDGE);
+            // The list stops at its last row (no empty space after it) and at its first row
+            grid.setWindowAlignmentPreferKeyLineOverHighEdge(false);
+            grid.setWindowAlignmentPreferKeyLineOverLowEdge(false);
+            grid.setWindowAlignmentOffset(0);
+            grid.setWindowAlignmentOffsetPercent(0);
+            grid.setItemAlignmentOffset(0);
+            grid.setItemAlignmentOffsetPercent(0);
+            grid.setFocusScrollStrategy(androidx.leanback.widget.BaseGridView.FOCUS_SCROLL_ITEM);
+            grid.setPadding(grid.getPaddingLeft(), 0, grid.getPaddingRight(), (int) (8 * density));
         }
 
         if (view instanceof ViewGroup) {
