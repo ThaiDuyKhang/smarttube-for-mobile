@@ -8,6 +8,7 @@ import android.view.ViewGroup;
 import android.widget.Button;
 import android.widget.ImageButton;
 import android.widget.ImageView;
+import android.widget.LinearLayout;
 import android.widget.ProgressBar;
 import android.widget.TextView;
 
@@ -37,6 +38,12 @@ public class MobileFeedAdapter extends RecyclerView.Adapter<RecyclerView.ViewHol
     public static final int TYPE_YOU_HEADER = 5;
     public static final int TYPE_SUGGESTION = 6;
     public static final int TYPE_VIEW = 7;
+    public static final int TYPE_HEADER_LINK = 8;
+    public static final int TYPE_VIDEO_ROW = 9;
+    public static final int TYPE_COMPACT = 10;
+    public static final int TYPE_CHANNEL = 11;
+    public static final int TYPE_PILL = 12;
+    public static final int TYPE_CHIPS = 13;
 
     public interface Callback {
         void onVideoClicked(Video video);
@@ -48,6 +55,10 @@ public class MobileFeedAdapter extends RecyclerView.Adapter<RecyclerView.ViewHol
         default void onSuggestionClicked(String text) {}
         default void onSuggestionFillClicked(String text) {}
         default void onSuggestionLongClicked(String text) {}
+        default void onChannelBellClicked(Video channel) {}
+        default void onViewChannelClicked() {}
+        /** Fills a row of chips (TYPE_CHIPS) */
+        default void bindChips(LinearLayout chips) {}
     }
 
     public static class Item {
@@ -57,6 +68,7 @@ public class MobileFeedAdapter extends RecyclerView.Adapter<RecyclerView.ViewHol
         final String title;
         final SettingsItem setting;
         final long id;
+        Runnable action;
         // Snapshot to tell if the row must be redrawn
         final float watched;
         final int count;
@@ -103,6 +115,40 @@ public class MobileFeedAdapter extends RecyclerView.Adapter<RecyclerView.ViewHol
             return new Item(TYPE_VIEW, null, null, null, null, makeId(TYPE_VIEW, TYPE_VIEW));
         }
 
+        /** Title with a ">" that opens the full page */
+        public static Item headerLink(String title, Object owner, Runnable action) {
+            Item item = new Item(TYPE_HEADER_LINK, null, null, title, null, makeId(TYPE_HEADER_LINK, owner));
+            item.action = action;
+            return item;
+        }
+
+        /** Horizontal row of small video cards */
+        public static Item videoRow(List<Video> videos, Object owner) {
+            return new Item(TYPE_VIDEO_ROW, null, videos, null, null, makeId(TYPE_VIDEO_ROW, owner));
+        }
+
+        /** Thumbnail on the left (playlists) */
+        public static Item compact(Video video) {
+            return new Item(TYPE_COMPACT, video, null, null, null, makeId(TYPE_COMPACT, video));
+        }
+
+        /** Subscribed channel with the notifications button */
+        public static Item channel(Video channel) {
+            return new Item(TYPE_CHANNEL, channel, null, null, null, makeId(TYPE_CHANNEL, channel));
+        }
+
+        /** Dropdown pill ("Most relevant v") */
+        public static Item pill(String title, Runnable action) {
+            Item item = new Item(TYPE_PILL, null, null, title, null, makeId(TYPE_PILL, TYPE_PILL));
+            item.action = action;
+            return item;
+        }
+
+        /** A row of chips filled by the callback */
+        public static Item chips(Object owner) {
+            return new Item(TYPE_CHIPS, null, null, null, null, makeId(TYPE_CHIPS, owner));
+        }
+
         public static Item youHeader() {
             return new Item(TYPE_YOU_HEADER, null, null, null, null, makeId(TYPE_YOU_HEADER, TYPE_YOU_HEADER));
         }
@@ -110,6 +156,10 @@ public class MobileFeedAdapter extends RecyclerView.Adapter<RecyclerView.ViewHol
         private static long makeId(int type, Object owner) {
             int hash = owner instanceof String ? owner.hashCode() : System.identityHashCode(owner);
             return ((long) type << 32) | (hash & 0xffffffffL);
+        }
+
+        public SettingsItem getSetting() {
+            return type == TYPE_SETTING ? setting : null;
         }
 
         /**
@@ -180,6 +230,17 @@ public class MobileFeedAdapter extends RecyclerView.Adapter<RecyclerView.ViewHol
         diff.dispatchUpdatesTo(this);
     }
 
+    /**
+     * A row dragged to a new place
+     */
+    public void moveItem(int from, int to) {
+        if (from < 0 || to < 0 || from >= mItems.size() || to >= mItems.size()) {
+            return;
+        }
+        mItems.add(to, mItems.remove(from));
+        notifyItemMoved(from, to);
+    }
+
     public void setCustomView(View view) {
         mCustomView = view;
     }
@@ -221,6 +282,18 @@ public class MobileFeedAdapter extends RecyclerView.Adapter<RecyclerView.ViewHol
                 return new SimpleHolder(inflater.inflate(R.layout.mobile_item_you_header, parent, false));
             case TYPE_SUGGESTION:
                 return new SimpleHolder(inflater.inflate(R.layout.mobile_item_suggestion, parent, false));
+            case TYPE_HEADER_LINK:
+                return new SimpleHolder(inflater.inflate(R.layout.mobile_item_header_link, parent, false));
+            case TYPE_VIDEO_ROW:
+                return new VideoRowHolder(inflater.inflate(R.layout.mobile_item_video_row, parent, false));
+            case TYPE_COMPACT:
+                return new SimpleHolder(inflater.inflate(R.layout.mobile_item_compact, parent, false));
+            case TYPE_CHANNEL:
+                return new SimpleHolder(inflater.inflate(R.layout.mobile_item_channel, parent, false));
+            case TYPE_PILL:
+                return new SimpleHolder(inflater.inflate(R.layout.mobile_item_pill, parent, false));
+            case TYPE_CHIPS:
+                return new SimpleHolder(inflater.inflate(R.layout.mobile_item_chips, parent, false));
             case TYPE_VIEW:
                 if (mCustomView.getParent() instanceof ViewGroup) {
                     ((ViewGroup) mCustomView.getParent()).removeView(mCustomView);
@@ -259,7 +332,47 @@ public class MobileFeedAdapter extends RecyclerView.Adapter<RecyclerView.ViewHol
             case TYPE_SUGGESTION:
                 bindSuggestion(holder.itemView, item.title, item.setting == HISTORY_MARK);
                 break;
+            case TYPE_HEADER_LINK:
+                ((TextView) holder.itemView.findViewById(R.id.mobile_header_title)).setText(item.title);
+                holder.itemView.setOnClickListener(v -> item.action.run());
+                break;
+            case TYPE_VIDEO_ROW:
+                ((VideoRowHolder) holder).bind(item.videos);
+                break;
+            case TYPE_COMPACT:
+                bindVideo(holder.itemView, item.video);
+                break;
+            case TYPE_CHANNEL:
+                bindChannel(holder.itemView, item.video);
+                break;
+            case TYPE_PILL:
+                TextView pill = holder.itemView.findViewById(R.id.mobile_pill);
+                pill.setText(item.title);
+                pill.setOnClickListener(v -> item.action.run());
+                break;
+            case TYPE_CHIPS:
+                mCallback.bindChips(holder.itemView.findViewById(R.id.mobile_row_chips));
+                break;
         }
+    }
+
+    private void bindChannel(View view, Video channel) {
+        ImageView avatar = view.findViewById(R.id.mobile_channel_item_avatar);
+        String url = channel.getCardImageUrl();
+        if (TextUtils.isEmpty(url)) {
+            Glide.with(view).clear(avatar);
+            avatar.setImageDrawable(null);
+        } else {
+            Glide.with(view).load(url).apply(RequestOptions.circleCropTransform()).into(avatar);
+        }
+        ((TextView) view.findViewById(R.id.mobile_channel_item_name)).setText(channel.getTitle());
+        view.findViewById(R.id.mobile_channel_item_dot).setVisibility(channel.hasNewContent ? View.VISIBLE : View.GONE);
+        view.setOnClickListener(v -> mCallback.onVideoClicked(channel));
+        view.setOnLongClickListener(v -> {
+            mCallback.onVideoLongClicked(channel);
+            return true;
+        });
+        view.findViewById(R.id.mobile_channel_item_bell).setOnClickListener(v -> mCallback.onChannelBellClicked(channel));
     }
 
     private void bindSuggestion(View view, String text, boolean isHistory) {
@@ -353,12 +466,12 @@ public class MobileFeedAdapter extends RecyclerView.Adapter<RecyclerView.ViewHol
         ImageView avatar = view.findViewById(R.id.mobile_account_avatar);
         TextView name = view.findViewById(R.id.mobile_account_name);
         TextView email = view.findViewById(R.id.mobile_account_email);
-        Button switchButton = view.findViewById(R.id.mobile_account_switch);
+        Button first = view.findViewById(R.id.mobile_account_switch);
+        Button second = view.findViewById(R.id.mobile_account_settings);
 
         if (account != null && !account.isEmpty()) {
             name.setText(account.getName());
             setTextOrHide(email, account.getEmail());
-            switchButton.setText(R.string.mobile_switch_account);
             if (!TextUtils.isEmpty(account.getAvatarImageUrl())) {
                 Glide.with(context).load(account.getAvatarImageUrl())
                         .apply(RequestOptions.circleCropTransform())
@@ -367,15 +480,20 @@ public class MobileFeedAdapter extends RecyclerView.Adapter<RecyclerView.ViewHol
             } else {
                 avatar.setImageResource(R.drawable.mobile_ic_account);
             }
+            // Signed in: your channel, switch account
+            first.setText(R.string.mobile_view_channel);
+            first.setOnClickListener(v -> mCallback.onViewChannelClicked());
+            second.setText(R.string.mobile_switch_account);
+            second.setOnClickListener(v -> mCallback.onSwitchAccountClicked());
         } else {
             name.setText(R.string.mobile_not_signed_in);
             email.setVisibility(View.GONE);
-            switchButton.setText(R.string.mobile_sign_in);
             avatar.setImageResource(R.drawable.mobile_ic_account);
+            first.setText(R.string.mobile_sign_in);
+            first.setOnClickListener(v -> mCallback.onSwitchAccountClicked());
+            second.setText(R.string.mobile_settings);
+            second.setOnClickListener(v -> mCallback.onSettingsClicked());
         }
-
-        switchButton.setOnClickListener(v -> mCallback.onSwitchAccountClicked());
-        view.findViewById(R.id.mobile_account_settings).setOnClickListener(v -> mCallback.onSettingsClicked());
     }
 
     static void bindBadge(TextView badge, Video video) {
@@ -444,6 +562,53 @@ public class MobileFeedAdapter extends RecyclerView.Adapter<RecyclerView.ViewHol
 
         void bind(List<Video> videos) {
             mAdapter.setVideos(videos);
+        }
+    }
+
+    /**
+     * Horizontal row of small cards: own adapter, the rows share their cards
+     */
+    private class VideoRowHolder extends RecyclerView.ViewHolder {
+        private final SmallCardAdapter mAdapter = new SmallCardAdapter();
+
+        VideoRowHolder(@NonNull View itemView) {
+            super(itemView);
+            RecyclerView row = (RecyclerView) itemView;
+            LinearLayoutManager layoutManager = new LinearLayoutManager(itemView.getContext(), LinearLayoutManager.HORIZONTAL, false);
+            layoutManager.setInitialPrefetchItemCount(3);
+            row.setLayoutManager(layoutManager);
+            row.setHasFixedSize(true);
+            row.setAdapter(mAdapter);
+        }
+
+        void bind(List<Video> videos) {
+            mAdapter.setVideos(videos);
+        }
+    }
+
+    private class SmallCardAdapter extends RecyclerView.Adapter<RecyclerView.ViewHolder> {
+        private final List<Video> mVideos = new ArrayList<>();
+
+        void setVideos(List<Video> videos) {
+            mVideos.clear();
+            mVideos.addAll(videos);
+            notifyDataSetChanged();
+        }
+
+        @Override
+        public int getItemCount() {
+            return mVideos.size();
+        }
+
+        @NonNull
+        @Override
+        public RecyclerView.ViewHolder onCreateViewHolder(@NonNull ViewGroup parent, int viewType) {
+            return new SimpleHolder(LayoutInflater.from(parent.getContext()).inflate(R.layout.mobile_item_small_card, parent, false));
+        }
+
+        @Override
+        public void onBindViewHolder(@NonNull RecyclerView.ViewHolder holder, int position) {
+            bindVideo(holder.itemView, mVideos.get(position));
         }
     }
 

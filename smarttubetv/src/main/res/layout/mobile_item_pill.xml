@@ -1,0 +1,17 @@
+<?xml version="1.0" encoding="utf-8"?>
+<!-- Mobile build: a dropdown pill above a list ("Most relevant v") -->
+<FrameLayout xmlns:android="http://schemas.android.com/apk/res/android"
+    android:layout_width="match_parent"
+    android:layout_height="wrap_content"
+    android:paddingStart="16dp"
+    android:paddingTop="4dp"
+    android:paddingBottom="8dp">
+
+    <TextView
+        android:id="@+id/mobile_pill"
+        style="@style/MobilePill"
+        android:layout_height="36dp"
+        android:drawableEnd="@drawable/mobile_ic_chevron_down"
+        android:paddingStart="14dp"
+        android:paddingEnd="10dp" />
+</FrameLayout>

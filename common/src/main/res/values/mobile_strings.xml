@@ -109,4 +109,11 @@
     <string name="mobile_theme_dark">Dark theme</string>
     <string name="mobile_theme_applying">Applying the theme…</string>
     <string name="mobile_new_to_you">New to you</string>
+    <string name="mobile_view_channel">View channel</string>
+    <string name="mobile_all_subscriptions">All subscriptions</string>
+    <string name="mobile_library">Library</string>
+    <string name="mobile_account">Account</string>
+    <string name="mobile_sort_relevant">Most relevant</string>
+    <string name="mobile_sort_new_activity">New activity</string>
+    <string name="mobile_sort_az">A-Z</string>
 </resources>

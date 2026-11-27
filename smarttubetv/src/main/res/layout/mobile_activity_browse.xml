@@ -101,6 +101,28 @@
                     tools:ignore="HardcodedText" />
 
                 <TextView
+                    android:id="@+id/mobile_account_pill"
+                    android:layout_width="wrap_content"
+                    android:layout_height="40dp"
+                    android:background="@drawable/mobile_pill_bg"
+                    android:drawableEnd="@drawable/mobile_ic_chevron_down"
+                    android:drawablePadding="6dp"
+                    android:gravity="center_vertical"
+                    android:paddingStart="16dp"
+                    android:paddingEnd="12dp"
+                    android:text="@string/mobile_account"
+                    android:textColor="@color/mobile_text"
+                    android:textSize="16sp"
+                    android:visibility="gone" />
+
+                <View
+                    android:id="@+id/mobile_account_pill_space"
+                    android:layout_width="0dp"
+                    android:layout_height="1dp"
+                    android:layout_weight="1"
+                    android:visibility="gone" />
+
+                <TextView
                     android:id="@+id/mobile_title"
                     android:layout_width="0dp"
                     android:layout_height="wrap_content"

@@ -72,6 +72,10 @@ public class MobileBrowseActivity extends MobileActivity implements BrowseView, 
     private int mCurrentTab = TAB_HOME;
     private boolean mIsFirstSectionSelected;
     private boolean mIsNewToYou;
+    private boolean mIsHistoryPage;
+    private final Object mLibraryHeaderOwner = new Object();
+    private List<Video> mYouPlaylists;
+    private boolean mIsYouPlaylistsLoading;
     private long mNewToYouSeed;
     private View mHeader;
     private View mSubsHeader;
@@ -152,6 +156,9 @@ public class MobileBrowseActivity extends MobileActivity implements BrowseView, 
 
         mIsCreated = false;
 
+        mYouPlaylists = null; // the account could be changed
+        mIsYouPlaylistsLoading = false;
+        updateTabs();
         if (mCurrentTab == TAB_YOU) {
             rebuildFeed(); // the account could be changed
         }
@@ -177,9 +184,9 @@ public class MobileBrowseActivity extends MobileActivity implements BrowseView, 
             return;
         }
 
-        // A library page goes back to the You page
-        if (mCurrentTab == TAB_YOU && !isYouRoot()) {
-            openSectionById(MediaGroup.TYPE_HISTORY);
+        // A page of a tab (settings, playlists, all subscriptions...) goes back to the tab
+        if (isSubpage()) {
+            onTabClicked(mCurrentTab);
             return;
         }
 
@@ -248,6 +255,7 @@ public class MobileBrowseActivity extends MobileActivity implements BrowseView, 
         });
         mAdapter = new MobileFeedAdapter(this);
         mFeed.setAdapter(mAdapter);
+        initRowDrag();
         mFeed.setHasFixedSize(true);
         mFeed.setItemViewCacheSize(8); // scrolling back up doesn't rebind the last cards
         if (mFeed.getItemAnimator() instanceof androidx.recyclerview.widget.SimpleItemAnimator) {
@@ -281,6 +289,7 @@ public class MobileBrowseActivity extends MobileActivity implements BrowseView, 
             }
         });
         findViewById(R.id.mobile_back).setOnClickListener(v -> onBackPressed());
+        findViewById(R.id.mobile_account_pill).setOnClickListener(v -> onSwitchAccountClicked());
 
         ((TextView) findViewById(R.id.mobile_drawer_footer)).setText(
                 String.format("%s %s", getString(R.string.app_name), AppInfoHelpers.getAppVersionName(this)));
@@ -331,8 +340,29 @@ public class MobileBrowseActivity extends MobileActivity implements BrowseView, 
             ImageView icon = (ImageView) tab.getChildAt(0);
             int[] icons = (int[]) icon.getTag();
             boolean selected = i == mCurrentTab;
-            icon.setImageResource(selected ? icons[1] : icons[0]);
             tab.setSelected(selected);
+
+            // Signed in: the You tab shows the account avatar (a ring when selected), like the YouTube app
+            if (i == TAB_YOU) {
+                Account account = getAccount();
+                String avatarUrl = account != null && !account.isEmpty() ? account.getAvatarImageUrl() : null;
+                if (!TextUtils.isEmpty(avatarUrl)) {
+                    icon.setBackgroundResource(selected ? R.drawable.mobile_avatar_ring : 0);
+                    int padding = selected ? dp(2) : 0;
+                    icon.setPadding(padding, padding, padding, padding);
+                    if (!avatarUrl.equals(icon.getTag(R.id.mobile_tab_avatar))) {
+                        icon.setTag(R.id.mobile_tab_avatar, avatarUrl);
+                        Glide.with(this).load(avatarUrl).apply(com.bumptech.glide.request.RequestOptions.circleCropTransform()).into(icon);
+                    }
+                    continue;
+                }
+                icon.setTag(R.id.mobile_tab_avatar, null);
+                icon.setBackgroundResource(0);
+                icon.setPadding(0, 0, 0, 0);
+                Glide.with(this).clear(icon);
+            }
+
+            icon.setImageResource(selected ? icons[1] : icons[0]);
         }
 
         boolean isShorts = mCurrentTab == TAB_SHORTS;
@@ -342,17 +372,23 @@ public class MobileBrowseActivity extends MobileActivity implements BrowseView, 
         mChipsScroll.setVisibility(mCurrentTab == TAB_HOME ? View.VISIBLE : View.GONE);
         mSettingsButton.setVisibility(isYou ? View.VISIBLE : View.GONE);
         // Pages of the You tab (settings, playlists, channels...): back arrow and the page name, X closes the settings
-        boolean isSubpage = isYou && !isYouRoot();
+        boolean isSubpage = isSubpage();
+        boolean isYouRoot = isYouRoot();
         boolean isSettings = mCurrentSection != null && mCurrentSection.getId() == MediaGroup.TYPE_SETTINGS;
         findViewById(R.id.mobile_back).setVisibility(isSubpage ? View.VISIBLE : View.GONE);
-        findViewById(R.id.mobile_logo).setVisibility(isSubpage ? View.GONE : View.VISIBLE);
-        ((TextView) findViewById(R.id.mobile_title)).setText(isSubpage ? mCurrentSection.getTitle() : getString(R.string.mobile_app_title));
+        findViewById(R.id.mobile_logo).setVisibility(isSubpage || isYouRoot ? View.GONE : View.VISIBLE);
+        findViewById(R.id.mobile_title).setVisibility(isYouRoot ? View.GONE : View.VISIBLE);
+        // The You page: account switcher instead of the logo (like the YouTube app)
+        findViewById(R.id.mobile_account_pill).setVisibility(isYouRoot ? View.VISIBLE : View.GONE);
+        findViewById(R.id.mobile_account_pill_space).setVisibility(isYouRoot ? View.VISIBLE : View.GONE);
+        ((TextView) findViewById(R.id.mobile_title)).setText(isSubpage ? getSubpageTitle() : getString(R.string.mobile_app_title));
         ((ImageButton) mSettingsButton).setImageResource(isSettings ? R.drawable.mobile_ic_close : R.drawable.mobile_ic_settings);
         mSettingsButton.setContentDescription(getString(isSettings ? R.string.mobile_close_player : R.string.mobile_settings));
         mNotificationsButton.setVisibility(findSection(MediaGroup.TYPE_NOTIFICATIONS) != null ? View.VISIBLE : View.GONE);
         // Shorts pages fill the feed exactly, so no bottom padding there
-        mSubsHeader.setVisibility(mCurrentTab == TAB_SUBSCRIPTIONS && MobileUi.isSignedIn() ? View.VISIBLE : View.GONE);
-        if (mCurrentTab == TAB_SUBSCRIPTIONS) {
+        boolean isSubsRoot = mCurrentTab == TAB_SUBSCRIPTIONS && !isSubpage;
+        mSubsHeader.setVisibility(isSubsRoot && MobileUi.isSignedIn() ? View.VISIBLE : View.GONE);
+        if (isSubsRoot) {
             updateSubsHeader();
         }
         showHeader();
@@ -361,7 +397,7 @@ public class MobileBrowseActivity extends MobileActivity implements BrowseView, 
     }
 
     private void onTabClicked(int tab) {
-        if (tab == mCurrentTab && tab != TAB_HOME) {
+        if (tab == mCurrentTab && tab != TAB_HOME && !isSubpage()) {
             mFeed.scrollToPosition(0);
             return;
         }
@@ -422,6 +458,7 @@ public class MobileBrowseActivity extends MobileActivity implements BrowseView, 
         mCurrentSection = section;
         mCurrentTab = getTab(section);
         mIsNewToYou = false;
+        mIsHistoryPage = false;
 
         if (mCurrentTab == TAB_HOME) {
             mLastHomeSectionId = section.getId();
@@ -455,6 +492,7 @@ public class MobileBrowseActivity extends MobileActivity implements BrowseView, 
             case MediaGroup.TYPE_SHORTS:
                 return TAB_SHORTS;
             case MediaGroup.TYPE_SUBSCRIPTIONS:
+            case MediaGroup.TYPE_CHANNEL_UPLOADS: // "All subscriptions"
                 return TAB_SUBSCRIPTIONS;
             default:
                 // Chips stay on Home. History, playlists, channels, etc. are pages of the You tab.
@@ -502,41 +540,58 @@ public class MobileBrowseActivity extends MobileActivity implements BrowseView, 
         // Keep the explore button (first child)
         mChips.removeViews(1, mChips.getChildCount() - 1);
 
-        for (BrowseSection section : getChipSections()) {
-            boolean selected = mCurrentTab == TAB_HOME && mCurrentSection != null && mCurrentSection.getId() == section.getId() && !mIsNewToYou;
-            TextView chip = new TextView(this);
-            chip.setText(section.getId() == MediaGroup.TYPE_HOME ? getString(R.string.mobile_all) : section.getTitle());
-            chip.setTextSize(14);
-            chip.setGravity(Gravity.CENTER);
-            chip.setSingleLine(true);
-            chip.setPadding(dp(12), 0, dp(12), 0);
-            chip.setBackgroundResource(selected ? R.drawable.mobile_chip_selected_bg : R.drawable.mobile_chip_bg);
-            chip.setTextColor(ContextCompat.getColor(this, selected ? R.color.mobile_text_on_light : R.color.mobile_text));
-            chip.setOnClickListener(v -> openSection(section));
-            chip.setSelected(selected);
-
-            LinearLayout.LayoutParams lp = new LinearLayout.LayoutParams(ViewGroup.LayoutParams.WRAP_CONTENT, dp(32));
-            lp.setMarginStart(dp(8));
-            mChips.addView(chip, lp);
-        }
-
-        // Last chip: recent videos you haven't watched, in a random order (from the Home recommendations)
+        // Chips: the sections, then "New to you" (recent videos you haven't watched, from the Home recommendations)
+        List<Object> chips = new ArrayList<>(getChipSections());
         BrowseSection home = findSection(MediaGroup.TYPE_HOME);
         if (home != null) {
-            boolean selected = mCurrentTab == TAB_HOME && mIsNewToYou;
-            TextView chip = new TextView(this);
-            chip.setText(R.string.mobile_new_to_you);
-            chip.setTextSize(14);
-            chip.setGravity(Gravity.CENTER);
-            chip.setSingleLine(true);
-            chip.setPadding(dp(12), 0, dp(12), 0);
-            chip.setBackgroundResource(selected ? R.drawable.mobile_chip_selected_bg : R.drawable.mobile_chip_bg);
-            chip.setTextColor(ContextCompat.getColor(this, selected ? R.color.mobile_text_on_light : R.color.mobile_text));
-            chip.setOnClickListener(v -> openNewToYou(home));
+            chips.add(NEW_TO_YOU);
+        }
+        MobileOrder.sort(this, ORDER_CHIPS, chips, this::chipKey);
+
+        for (Object item : chips) {
+            boolean isNewToYou = item == NEW_TO_YOU;
+            BrowseSection section = isNewToYou ? home : (BrowseSection) item;
+            boolean selected = mCurrentTab == TAB_HOME && (isNewToYou ? mIsNewToYou :
+                    !mIsNewToYou && mCurrentSection != null && mCurrentSection.getId() == section.getId());
+            TextView chip = createChip(isNewToYou ? getString(R.string.mobile_new_to_you) :
+                    section.getId() == MediaGroup.TYPE_HOME ? getString(R.string.mobile_all) : section.getTitle(), selected);
+            chip.setOnClickListener(v -> {
+                if (isNewToYou) {
+                    openNewToYou(home);
+                } else {
+                    openSection(section);
+                }
+            });
             LinearLayout.LayoutParams lp = new LinearLayout.LayoutParams(ViewGroup.LayoutParams.WRAP_CONTENT, dp(32));
             lp.setMarginStart(dp(8));
             mChips.addView(chip, lp);
+            // Long press and drag: a new place for the chip
+            MobileDragReorder.attach(chip, chipKey(item), mChips, 1, keys -> MobileOrder.save(this, ORDER_CHIPS, keys), null);
         }
+    }
+
+    private static final Object NEW_TO_YOU = new Object();
+    private static final String ORDER_CHIPS = "chips";
+    private static final String ORDER_DRAWER = "drawer";
+    private static final String ORDER_SUBS_FILTERS = "subs_filters";
+    private static final String ORDER_SETTINGS = "settings";
+    private static final String ORDER_LIBRARY = "library";
+
+    private String chipKey(Object item) {
+        return item == NEW_TO_YOU ? "new_to_you" : String.valueOf(((BrowseSection) item).getId());
+    }
+
+    private TextView createChip(CharSequence text, boolean selected) {
+        TextView chip = new TextView(this);
+        chip.setText(text);
+        chip.setTextSize(14);
+        chip.setGravity(Gravity.CENTER);
+        chip.setSingleLine(true);
+        chip.setPadding(dp(12), 0, dp(12), 0);
+        chip.setBackgroundResource(selected ? R.drawable.mobile_chip_selected_bg : R.drawable.mobile_chip_bg);
+        chip.setTextColor(ContextCompat.getColor(this, selected ? R.color.mobile_text_on_light : R.color.mobile_text));
+        chip.setSelected(selected);
+        return chip;
     }
 
     /**
@@ -615,7 +670,10 @@ public class MobileBrowseActivity extends MobileActivity implements BrowseView, 
         mDrawerItems.removeAllViews();
         LayoutInflater inflater = LayoutInflater.from(this);
 
-        for (BrowseSection section : mSections) {
+        List<BrowseSection> sections = new ArrayList<>(mSections);
+        MobileOrder.sort(this, ORDER_DRAWER, sections, section -> String.valueOf(section.getId()));
+
+        for (BrowseSection section : sections) {
             View row = inflater.inflate(R.layout.mobile_item_setting, mDrawerItems, false);
             row.getLayoutParams().height = dp(44); // denser than the settings list, like the YouTube menu
             ImageView icon = row.findViewById(R.id.mobile_row_icon);
@@ -630,12 +688,13 @@ public class MobileBrowseActivity extends MobileActivity implements BrowseView, 
                 closeDrawer();
                 openSection(section);
             });
-            row.setOnLongClickListener(v -> {
-                closeDrawer();
-                mPresenter.onSectionLongPressed(section.getId());
-                return true;
-            });
             mDrawerItems.addView(row);
+            // Long press and drag: a new place in the menu. Long press without moving: the section menu.
+            MobileDragReorder.attach(row, String.valueOf(section.getId()), (LinearLayout) mDrawerItems, 0,
+                    keys -> MobileOrder.save(this, ORDER_DRAWER, keys), () -> {
+                        closeDrawer();
+                        mPresenter.onSectionLongPressed(section.getId());
+                    });
         }
 
         mDrawerScrim.setAlpha(0);
@@ -748,21 +807,14 @@ public class MobileBrowseActivity extends MobileActivity implements BrowseView, 
 
     private void updateSubsFilters() {
         mSubsFilters.removeAllViews();
-        int[][] filters = {
+        List<int[]> filters = new ArrayList<>(Arrays.asList(new int[][] {
                 {FILTER_ALL, R.string.mobile_all}, {FILTER_TODAY, R.string.mobile_filter_today}, {FILTER_VIDEOS, R.string.mobile_filter_videos},
                 {FILTER_SHORTS, R.string.mobile_filter_shorts}, {FILTER_LIVE, R.string.mobile_filter_live},
-                {FILTER_CONTINUE, R.string.mobile_filter_continue}, {FILTER_UNWATCHED, R.string.mobile_filter_unwatched}};
+                {FILTER_CONTINUE, R.string.mobile_filter_continue}, {FILTER_UNWATCHED, R.string.mobile_filter_unwatched}}));
+        MobileOrder.sort(this, ORDER_SUBS_FILTERS, filters, filter -> String.valueOf(filter[0]));
 
         for (int[] filter : filters) {
-            boolean selected = filter[0] == mSubsFilter;
-            TextView chip = new TextView(this);
-            chip.setText(filter[1]);
-            chip.setTextSize(14);
-            chip.setGravity(Gravity.CENTER);
-            chip.setSingleLine(true);
-            chip.setPadding(dp(12), 0, dp(12), 0);
-            chip.setBackgroundResource(selected ? R.drawable.mobile_chip_selected_bg : R.drawable.mobile_chip_bg);
-            chip.setTextColor(ContextCompat.getColor(this, selected ? R.color.mobile_text_on_light : R.color.mobile_text));
+            TextView chip = createChip(getString(filter[1]), filter[0] == mSubsFilter);
             chip.setOnClickListener(v -> {
                 mSubsFilter = filter[0];
                 updateSubsFilters();
@@ -773,6 +825,8 @@ public class MobileBrowseActivity extends MobileActivity implements BrowseView, 
             LinearLayout.LayoutParams lp = new LinearLayout.LayoutParams(ViewGroup.LayoutParams.WRAP_CONTENT, dp(32));
             lp.setMarginStart(dp(8));
             mSubsFilters.addView(chip, lp);
+            MobileDragReorder.attach(chip, String.valueOf(filter[0]), mSubsFilters, 0,
+                    keys -> MobileOrder.save(this, ORDER_SUBS_FILTERS, keys), null);
         }
     }
 
@@ -816,24 +870,28 @@ public class MobileBrowseActivity extends MobileActivity implements BrowseView, 
     private void rebuildFeed() {
         List<MobileFeedAdapter.Item> items = new ArrayList<>();
 
-        if (mCurrentTab == TAB_YOU) {
-            if (isYouRoot()) {
-                // Account, then the library pages, then the watch history
-                items.add(MobileFeedAdapter.Item.youHeader());
-
-                for (BrowseSection section : mSections) {
-                    if (getTab(section) == TAB_YOU && section.getId() != MediaGroup.TYPE_HISTORY) {
-                        items.add(MobileFeedAdapter.Item.setting(getLibraryItem(section)));
-                    }
-                }
-
-                if (hasVideos()) {
-                    items.add(MobileFeedAdapter.Item.header(getString(R.string.mobile_watched_videos), mHistoryHeaderOwner));
-                }
-            }
+        if (isYouRoot()) {
+            buildYouPage(items);
+            mAdapter.setItems(items);
+            return;
         }
 
-        for (SettingsItem setting : mSettings) {
+        // All subscriptions: sort, then one row per channel
+        if (mCurrentSection != null && mCurrentSection.getId() == MediaGroup.TYPE_CHANNEL_UPLOADS) {
+            items.add(MobileFeedAdapter.Item.pill(getChannelSortTitle(), this::showChannelSortDialog));
+            for (Block block : mBlocks) {
+                for (Video channel : block.videos) {
+                    items.add(MobileFeedAdapter.Item.channel(channel));
+                }
+            }
+            mAdapter.setItems(items);
+            mHandler.post(this::checkLoadMore);
+            return;
+        }
+
+        List<SettingsItem> settings = new ArrayList<>(mSettings);
+        MobileOrder.sort(this, ORDER_SETTINGS, settings, this::settingKey);
+        for (SettingsItem setting : settings) {
             items.add(MobileFeedAdapter.Item.setting(setting));
         }
 
@@ -932,8 +990,202 @@ public class MobileBrowseActivity extends MobileActivity implements BrowseView, 
         }
     }
 
+    /**
+     * The You page like the YouTube app: account, watched videos (a row), library chips, playlists
+     */
+    private void buildYouPage(List<MobileFeedAdapter.Item> items) {
+        items.add(MobileFeedAdapter.Item.youHeader());
+
+        List<Video> history = new ArrayList<>();
+        for (Block block : mBlocks) {
+            for (Video video : block.videos) {
+                if (history.size() < 20) {
+                    history.add(video);
+                }
+            }
+        }
+        if (!history.isEmpty()) {
+            items.add(MobileFeedAdapter.Item.headerLink(getString(R.string.mobile_watched_videos), mHistoryHeaderOwner, this::openHistoryPage));
+            items.add(MobileFeedAdapter.Item.videoRow(history, mHistoryHeaderOwner));
+        }
+
+        items.add(MobileFeedAdapter.Item.header(getString(R.string.mobile_library), mLibraryHeaderOwner));
+        items.add(MobileFeedAdapter.Item.chips(mLibraryHeaderOwner));
+
+        if (MobileUi.isSignedIn()) {
+            loadYouPlaylists();
+            if (mYouPlaylists != null) {
+                for (Video playlist : mYouPlaylists) {
+                    items.add(MobileFeedAdapter.Item.compact(playlist));
+                }
+            }
+        }
+    }
+
+    /**
+     * Library chips of the You page (playlists, channels, your videos...): tap to open, long press and drag to move
+     */
+    @Override
+    public void bindChips(LinearLayout chips) {
+        chips.removeAllViews();
+
+        List<BrowseSection> library = new ArrayList<>();
+        for (BrowseSection section : mSections) {
+            boolean isLibrary = getTab(section) == TAB_YOU || section.getId() == MediaGroup.TYPE_CHANNEL_UPLOADS;
+            if (isLibrary && section.getId() != MediaGroup.TYPE_HISTORY && section.getId() != MediaGroup.TYPE_SETTINGS) {
+                library.add(section);
+            }
+        }
+        MobileOrder.sort(this, ORDER_LIBRARY, library, section -> "section_" + section.getId());
+
+        for (BrowseSection section : library) {
+            TextView chip = createChip(section.getId() == MediaGroup.TYPE_CHANNEL_UPLOADS ?
+                    getString(R.string.mobile_all_subscriptions) : section.getTitle(), false);
+            chip.setOnClickListener(v -> openSection(section));
+            LinearLayout.LayoutParams lp = new LinearLayout.LayoutParams(ViewGroup.LayoutParams.WRAP_CONTENT, dp(32));
+            lp.setMarginStart(dp(8));
+            chips.addView(chip, lp);
+            MobileDragReorder.attach(chip, "section_" + section.getId(), chips, 0, keys -> MobileOrder.save(this, ORDER_LIBRARY, keys), null);
+        }
+    }
+
+    private void loadYouPlaylists() {
+        if (mIsYouPlaylistsLoading) {
+            return;
+        }
+
+        mIsYouPlaylistsLoading = true;
+        com.liskovsoft.sharedutils.rx.RxHelper.execute(
+                com.liskovsoft.youtubeapi.service.YouTubeServiceManager.instance().getContentService().getPlaylistsObserve(),
+                group -> runOnUiThread(() -> {
+                    List<Video> playlists = group != null ? VideoGroup.from(group).getVideos() : null;
+                    mYouPlaylists = playlists != null ? new ArrayList<>(playlists) : new ArrayList<>();
+                    if (isYouRoot()) {
+                        rebuildFeed();
+                    }
+                }),
+                error -> runOnUiThread(() -> mIsYouPlaylistsLoading = false));
+    }
+
+    private String getChannelSortTitle() {
+        switch (getMainUIData().getChannelCategorySorting()) {
+            case com.liskovsoft.smartyoutubetv2.common.prefs.MainUIData.CHANNEL_SORTING_NAME:
+            case com.liskovsoft.smartyoutubetv2.common.prefs.MainUIData.CHANNEL_SORTING_NAME2:
+                return getString(R.string.mobile_sort_az);
+            case com.liskovsoft.smartyoutubetv2.common.prefs.MainUIData.CHANNEL_SORTING_NEW_CONTENT:
+                return getString(R.string.mobile_sort_new_activity);
+            default:
+                return getString(R.string.mobile_sort_relevant);
+        }
+    }
+
+    private void showChannelSortDialog() {
+        int[][] options = {
+                {com.liskovsoft.smartyoutubetv2.common.prefs.MainUIData.CHANNEL_SORTING_LAST_VIEWED, R.string.mobile_sort_relevant},
+                {com.liskovsoft.smartyoutubetv2.common.prefs.MainUIData.CHANNEL_SORTING_NEW_CONTENT, R.string.mobile_sort_new_activity},
+                {com.liskovsoft.smartyoutubetv2.common.prefs.MainUIData.CHANNEL_SORTING_NAME, R.string.mobile_sort_az}};
+        String[] titles = new String[options.length];
+        int checked = 0;
+        String current = getChannelSortTitle();
+        for (int i = 0; i < options.length; i++) {
+            titles[i] = getString(options[i][1]);
+            if (titles[i].equals(current)) {
+                checked = i;
+            }
+        }
+
+        new android.app.AlertDialog.Builder(this, com.liskovsoft.smartyoutubetv2.common.utils.MobileThemeHelper.isLight(this) ?
+                android.R.style.Theme_DeviceDefault_Light_Dialog_Alert : android.R.style.Theme_DeviceDefault_Dialog_Alert)
+                .setSingleChoiceItems(titles, checked, (dialog, which) -> {
+                    dialog.dismiss();
+                    getMainUIData().setChannelCategorySorting(options[which][0]);
+                    mPresenter.updateChannelSorting();
+                    BrowseSection section = findSection(MediaGroup.TYPE_CHANNEL_UPLOADS);
+                    if (section != null) {
+                        openSection(section); // reload in the new order
+                    }
+                })
+                .show();
+    }
+
+    @Override
+    public void onChannelBellClicked(Video channel) {
+        if (channel.notificationStates == null || channel.notificationStates.isEmpty()) {
+            com.liskovsoft.smartyoutubetv2.common.app.presenters.dialogs.menu.VideoMenuPresenter.instance(this).showMenu(channel);
+            return;
+        }
+
+        com.liskovsoft.smartyoutubetv2.common.app.presenters.AppDialogPresenter dialog =
+                com.liskovsoft.smartyoutubetv2.common.app.presenters.AppDialogPresenter.instance(this);
+        List<com.liskovsoft.smartyoutubetv2.common.app.models.playback.ui.OptionItem> options = new ArrayList<>();
+        for (com.liskovsoft.mediaserviceinterfaces.data.NotificationState state : channel.notificationStates) {
+            options.add(com.liskovsoft.smartyoutubetv2.common.app.models.playback.ui.UiOptionItem.from(state.getTitle(), option -> {
+                if (option.isSelected()) {
+                    com.liskovsoft.smartyoutubetv2.common.misc.MediaServiceManager.instance().setNotificationState(state,
+                            error -> com.liskovsoft.sharedutils.helpers.MessageHelpers.showMessage(this, error.getLocalizedMessage()));
+                }
+            }, state.isSelected()));
+        }
+        dialog.appendRadioCategory(getString(R.string.mobile_notifications), options);
+        dialog.showDialog(channel.getTitle());
+    }
+
+    /**
+     * Your channel (from your videos), or your videos when it isn't known
+     */
+    @Override
+    public void onViewChannelClicked() {
+        com.liskovsoft.sharedutils.rx.RxHelper.execute(
+                com.liskovsoft.youtubeapi.service.YouTubeServiceManager.instance().getContentService().getMyVideosObserve(),
+                group -> runOnUiThread(() -> {
+                    List<Video> videos = group != null ? VideoGroup.from(group).getVideos() : null;
+                    String channelId = videos != null && !videos.isEmpty() ? videos.get(0).channelId : null;
+                    if (channelId != null) {
+                        com.liskovsoft.smartyoutubetv2.common.app.presenters.ChannelPresenter.instance(this).openChannel(channelId);
+                    } else {
+                        openSectionById(MediaGroup.TYPE_MY_VIDEOS);
+                    }
+                }),
+                error -> runOnUiThread(() -> openSectionById(MediaGroup.TYPE_MY_VIDEOS)));
+    }
+
     private boolean isYouRoot() {
-        return mCurrentTab == TAB_YOU && (mCurrentSection == null || mCurrentSection.getId() == MediaGroup.TYPE_HISTORY);
+        return mCurrentTab == TAB_YOU && (mCurrentSection == null || mCurrentSection.getId() == MediaGroup.TYPE_HISTORY && !mIsHistoryPage);
+    }
+
+    /**
+     * A page inside a tab (back arrow, page title): settings, playlists, the full history, all subscriptions...
+     */
+    private boolean isSubpage() {
+        if (mCurrentSection == null) {
+            return false;
+        }
+
+        switch (mCurrentTab) {
+            case TAB_YOU:
+                return !isYouRoot();
+            case TAB_SUBSCRIPTIONS:
+                return mCurrentSection.getId() != MediaGroup.TYPE_SUBSCRIPTIONS;
+            default:
+                return false;
+        }
+    }
+
+    private String getSubpageTitle() {
+        if (mCurrentSection.getId() == MediaGroup.TYPE_CHANNEL_UPLOADS) {
+            return getString(R.string.mobile_all_subscriptions);
+        }
+        if (mIsHistoryPage) {
+            return getString(R.string.mobile_watched_videos);
+        }
+        return mCurrentSection.getTitle();
+    }
+
+    private void openHistoryPage() {
+        openSectionById(MediaGroup.TYPE_HISTORY);
+        mIsHistoryPage = true;
+        updateTabs();
+        rebuildFeed();
     }
 
     private boolean hasVideos() {
@@ -944,6 +1196,90 @@ public class MobileBrowseActivity extends MobileActivity implements BrowseView, 
         }
 
         return false;
+    }
+
+    /**
+     * Stable key of a settings row (the language can change the titles): the section of a library row, the icon of a setting
+     */
+    private String settingKey(SettingsItem item) {
+        for (java.util.Map.Entry<Integer, SettingsItem> entry : mLibraryItems.entrySet()) {
+            if (entry.getValue() == item) {
+                return "section_" + entry.getKey();
+            }
+        }
+
+        if (item.imageResId > 0) {
+            try {
+                return getResources().getResourceEntryName(item.imageResId);
+            } catch (android.content.res.Resources.NotFoundException e) {
+                // Use the title
+            }
+        }
+
+        return String.valueOf(item.title);
+    }
+
+    /**
+     * Settings and library rows: long press and drag to give them a new place
+     */
+    private void initRowDrag() {
+        new androidx.recyclerview.widget.ItemTouchHelper(new androidx.recyclerview.widget.ItemTouchHelper.Callback() {
+            private boolean mIsMoved;
+
+            @Override
+            public int getMovementFlags(@NonNull RecyclerView recyclerView, @NonNull RecyclerView.ViewHolder holder) {
+                boolean canDrag = holder.getItemViewType() == MobileFeedAdapter.TYPE_SETTING && getRowOrderName() != null;
+                return makeMovementFlags(canDrag ? androidx.recyclerview.widget.ItemTouchHelper.UP | androidx.recyclerview.widget.ItemTouchHelper.DOWN : 0, 0);
+            }
+
+            @Override
+            public boolean onMove(@NonNull RecyclerView recyclerView, @NonNull RecyclerView.ViewHolder from, @NonNull RecyclerView.ViewHolder to) {
+                if (to.getItemViewType() != MobileFeedAdapter.TYPE_SETTING) {
+                    return false; // only among the rows
+                }
+                mAdapter.moveItem(from.getAdapterPosition(), to.getAdapterPosition());
+                mIsMoved = true;
+                return true;
+            }
+
+            @Override
+            public void onSelectedChanged(RecyclerView.ViewHolder holder, int actionState) {
+                super.onSelectedChanged(holder, actionState);
+                if (actionState == androidx.recyclerview.widget.ItemTouchHelper.ACTION_STATE_DRAG && holder != null) {
+                    holder.itemView.performHapticFeedback(android.view.HapticFeedbackConstants.LONG_PRESS);
+                    holder.itemView.setAlpha(0.85f);
+                }
+            }
+
+            @Override
+            public void clearView(@NonNull RecyclerView recyclerView, @NonNull RecyclerView.ViewHolder holder) {
+                super.clearView(recyclerView, holder);
+                holder.itemView.setAlpha(1);
+                String orderName = getRowOrderName();
+                if (mIsMoved && orderName != null) {
+                    mIsMoved = false;
+                    List<String> keys = new ArrayList<>();
+                    for (MobileFeedAdapter.Item item : mAdapter.getItems()) {
+                        if (item.getSetting() != null) {
+                            keys.add(settingKey(item.getSetting()));
+                        }
+                    }
+                    MobileOrder.save(MobileBrowseActivity.this, orderName, keys);
+                }
+            }
+
+            @Override
+            public void onSwiped(@NonNull RecyclerView.ViewHolder holder, int direction) {
+                // No swipe
+            }
+        }).attachToRecyclerView(mFeed);
+    }
+
+    private String getRowOrderName() {
+        if (mCurrentSection != null && mCurrentSection.getId() == MediaGroup.TYPE_SETTINGS) {
+            return ORDER_SETTINGS;
+        }
+        return null;
     }
 
     private SettingsItem getLibraryItem(BrowseSection section) {
@@ -960,8 +1296,8 @@ public class MobileBrowseActivity extends MobileActivity implements BrowseView, 
     private void checkLoadMore() {
         int count = mAdapter.getItemCount();
 
-        if (count == 0 || mCurrentSection == null || !mSettings.isEmpty()) {
-            return;
+        if (count == 0 || mCurrentSection == null || !mSettings.isEmpty() || isYouRoot()) {
+            return; // the You page shows a few watched videos only
         }
 
         if (mLayoutManager.findLastVisibleItemPosition() < count - LOAD_MORE_THRESHOLD) {

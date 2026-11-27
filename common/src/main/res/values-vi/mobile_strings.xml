@@ -107,4 +107,11 @@
     <string name="mobile_theme_dark">Giao diện tối</string>
     <string name="mobile_theme_applying">Đang áp dụng giao diện…</string>
     <string name="mobile_new_to_you">Đề xuất mới</string>
+    <string name="mobile_view_channel">Xem kênh</string>
+    <string name="mobile_all_subscriptions">Tất cả kênh đã đăng ký</string>
+    <string name="mobile_library">Thư viện</string>
+    <string name="mobile_account">Tài khoản</string>
+    <string name="mobile_sort_relevant">Liên quan nhất</string>
+    <string name="mobile_sort_new_activity">Hoạt động mới</string>
+    <string name="mobile_sort_az">A-Z</string>
 </resources>

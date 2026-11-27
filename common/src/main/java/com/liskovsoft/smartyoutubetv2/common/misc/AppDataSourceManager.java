@@ -77,9 +77,7 @@ public class AppDataSourceManager {
         List<SettingsItem> settingItems = new ArrayList<>();
 
         if (Utils.isMobileBuild(context)) {
-            // Phones: update from the GitHub releases without downloading the APK by hand
-            settingItems.add(new SettingsItem(context.getString(R.string.mobile_check_updates),
-                    () -> startMobileUpdates(context), R.drawable.settings_update));
+            // Phones: light or dark screens
             settingItems.add(new SettingsItem(context.getString(R.string.mobile_theme),
                     () -> showMobileThemeDialog(context), R.drawable.settings_theme));
         }
@@ -117,6 +115,12 @@ public class AppDataSourceManager {
         } else {
             settingItems.add(new SettingsItem(
                     context.getString(R.string.settings_about), () -> AboutSimpleSettingsPresenter.instance(context).show(), R.drawable.settings_about));
+        }
+
+        if (Utils.isMobileBuild(context)) {
+            // Phones: last item, under About
+            settingItems.add(new SettingsItem(context.getString(R.string.mobile_check_updates),
+                    () -> startMobileUpdates(context), R.drawable.settings_update));
         }
 
         return settingItems;
