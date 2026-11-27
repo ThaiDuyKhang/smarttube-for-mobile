@@ -98,6 +98,14 @@ public class AppDialogActivity extends MotherActivity {
         View root = getWindow().getDecorView();
         root.addOnLayoutChangeListener((v, l, t, r, b, ol, ot, or, ob) -> applyBottomSheet());
         root.post(this::applyBottomSheet);
+        // Menus opened inside the sheet (submenus, lists) bring new views without resizing the window:
+        // set them up on every layout pass (the setup is skipped when already done)
+        root.getViewTreeObserver().addOnGlobalLayoutListener(() -> {
+            View pane = findViewById(R.id.settings_preference_fragment_container);
+            if (pane != null) {
+                fixTitles(pane, getResources().getDisplayMetrics().density);
+            }
+        });
     }
 
     private void applyBottomSheet() {
@@ -199,11 +207,17 @@ public class AppDialogActivity extends MotherActivity {
             int top = (int) (8 * density);
             int bottom = (int) (12 * density);
             int side = (int) (20 * density);
-            if (lp.height != ViewGroup.LayoutParams.WRAP_CONTENT || lp.topMargin != top || lp.bottomMargin != bottom || lp.getMarginStart() != side) {
+            // A submenu: a back arrow before the title, to the menu it was opened from (none on the first menu)
+            boolean canGoBack = mFragment != null && mFragment.canGoBack();
+            int start = canGoBack ? (int) (56 * density) : side;
+            updateBackArrow(view, canGoBack, density);
+            if (lp.height != ViewGroup.LayoutParams.WRAP_CONTENT || lp.topMargin != top || lp.bottomMargin != bottom
+                    || lp.leftMargin != start || lp.getMarginStart() != start) {
                 lp.height = ViewGroup.LayoutParams.WRAP_CONTENT;
                 lp.topMargin = top;
                 lp.bottomMargin = bottom;
-                lp.setMarginStart(side);
+                lp.leftMargin = start;
+                lp.setMarginStart(start);
                 lp.setMarginEnd(side);
                 view.setLayoutParams(lp);
                 if (view instanceof android.widget.TextView) {
@@ -235,6 +249,42 @@ public class AppDialogActivity extends MotherActivity {
             for (int i = 0; i < group.getChildCount(); i++) {
                 fixTitles(group.getChildAt(i), density);
             }
+        }
+    }
+
+    private void updateBackArrow(View title, boolean show, float density) {
+        if (!(title.getParent() instanceof android.widget.FrameLayout)) {
+            return;
+        }
+
+        android.widget.FrameLayout header = (android.widget.FrameLayout) title.getParent();
+        View back = header.findViewWithTag("mobile_menu_back");
+
+        if (back == null) {
+            if (!show) {
+                return;
+            }
+            android.widget.ImageButton button = new android.widget.ImageButton(this);
+            button.setTag("mobile_menu_back");
+            button.setImageResource(R.drawable.mobile_ic_back);
+            button.setContentDescription(getString(R.string.mobile_back));
+            button.setBackgroundResource(R.drawable.mobile_ripple_borderless);
+            button.setOnClickListener(v -> {
+                if (mFragment != null && mFragment.canGoBack()) {
+                    mFragment.goBack();
+                }
+            });
+            android.widget.FrameLayout.LayoutParams lp = new android.widget.FrameLayout.LayoutParams((int) (48 * density), (int) (48 * density));
+            lp.gravity = Gravity.START | Gravity.CENTER_VERTICAL;
+            lp.leftMargin = (int) (6 * density);
+            lp.setMarginStart((int) (6 * density));
+            header.addView(button, lp);
+            back = button;
+        }
+
+        int visibility = show ? View.VISIBLE : View.GONE;
+        if (back.getVisibility() != visibility) {
+            back.setVisibility(visibility);
         }
     }
 
