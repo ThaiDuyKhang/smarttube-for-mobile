@@ -1,0 +1,9 @@
+<?xml version="1.0" encoding="utf-8"?>
+<!-- Mobile build: round - / + buttons of the speed panel (press ripple on top) -->
+<ripple xmlns:android="http://schemas.android.com/apk/res/android" android:color="@color/mobile_ripple">
+    <item>
+        <shape android:shape="oval">
+            <solid android:color="@color/mobile_chip"/>
+        </shape>
+    </item>
+</ripple>

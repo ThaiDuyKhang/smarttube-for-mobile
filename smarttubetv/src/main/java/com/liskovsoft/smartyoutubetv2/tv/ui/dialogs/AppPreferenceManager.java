@@ -52,11 +52,9 @@ public class AppPreferenceManager {
         Preference preference = createPreferenceInt(category);
 
         if (preference != null && Utils.isMobileBuild(mContext)) {
-            // Phones: an icon on every row, the chosen value under a list (like the YouTube app menus)
-            // (no icon on the check box rows: the box is their icon)
-            if (category.type != OptionCategory.TYPE_SINGLE_SWITCH) {
-                preference.setIcon(com.liskovsoft.smartyoutubetv2.tv.ui.mobile.MobileMenuIcons.forTitle(mContext, preference.getTitle()));
-            }
+            // Phones: an icon on every row (the on/off rows too: their switch is on the right),
+            // the chosen value under a list (like the YouTube app menus)
+            preference.setIcon(com.liskovsoft.smartyoutubetv2.tv.ui.mobile.MobileMenuIcons.forTitle(mContext, preference.getTitle()));
 
             if (category.type == OptionCategory.TYPE_RADIO_LIST && category.options != null) {
                 for (OptionItem item : category.options) {
@@ -158,7 +156,14 @@ public class AppPreferenceManager {
 
         if (category.options.size() == 1) {
             OptionItem item = category.options.get(0);
-            Preference preference = new CheckBoxPreference(mContext);
+            Preference preference;
+            if (Utils.isMobileBuild(mContext)) {
+                // Phones: a switch on the right, like the YouTube app
+                preference = new androidx.preference.SwitchPreference(mContext);
+                preference.setWidgetLayoutResource(R.layout.mobile_pref_switch);
+            } else {
+                preference = new CheckBoxPreference(mContext);
+            }
             preference.setPersistent(false);
             preference.setTitle(item.getTitle());
             preference.setDefaultValue(item.isSelected());

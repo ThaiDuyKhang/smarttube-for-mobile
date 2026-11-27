@@ -127,4 +127,5 @@
     <string name="mobile_auto">Tự động</string>
     <string name="mobile_playback_speed">Tốc độ phát</string>
     <string name="mobile_recent">Gần đây</string>
+    <string name="mobile_speed_normal">Bình thường</string>
 </resources>

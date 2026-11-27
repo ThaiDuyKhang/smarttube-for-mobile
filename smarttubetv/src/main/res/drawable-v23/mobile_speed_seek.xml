@@ -1,0 +1,18 @@
+<?xml version="1.0" encoding="utf-8"?>
+<!-- Mobile build: thin slider line of the speed panel (like the YouTube app) -->
+<layer-list xmlns:android="http://schemas.android.com/apk/res/android">
+    <item android:id="@android:id/background" android:gravity="center_vertical|fill_horizontal" android:height="3dp">
+        <shape android:shape="rectangle">
+            <corners android:radius="2dp"/>
+            <solid android:color="@color/mobile_divider_strong"/>
+        </shape>
+    </item>
+    <item android:id="@android:id/progress" android:gravity="center_vertical|fill_horizontal" android:height="3dp">
+        <clip>
+            <shape android:shape="rectangle">
+                <corners android:radius="2dp"/>
+                <solid android:color="@color/mobile_text"/>
+            </shape>
+        </clip>
+    </item>
+</layer-list>

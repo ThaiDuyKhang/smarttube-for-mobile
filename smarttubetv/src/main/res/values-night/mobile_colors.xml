@@ -16,4 +16,9 @@
     <color name="mobile_thumb_placeholder">#272727</color>
     <color name="mobile_scrim">#99000000</color>
     <color name="mobile_ripple">#33FFFFFF</color>
+    <!-- Switches (like the YouTube app) -->
+    <color name="mobile_switch_track_on">#F1F1F1</color>
+    <color name="mobile_switch_thumb_on">#0F0F0F</color>
+    <color name="mobile_switch_track_off">#3F3F3F</color>
+    <color name="mobile_switch_thumb_off">#9E9E9E</color>
 </resources>

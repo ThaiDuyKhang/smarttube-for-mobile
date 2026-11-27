@@ -48,15 +48,31 @@ public class AppDialogActivity extends MotherActivity {
         if (Utils.isMobileBuild(this)) {
             initBottomSheet();
 
-            // Opened over a full screen (landscape) video: stay in landscape, don't turn to portrait
-            // (the player screen tells it: the dialog itself could already be started in portrait)
-            PlaybackView player = PlaybackPresenter.instance(this).getView();
-            boolean isPlayerLandscape = player instanceof MobilePlaybackActivity && !((MobilePlaybackActivity) player).isFinishing()
-                    && ViewManager.instance(this).getTopView() == PlaybackView.class
-                    && ((MobilePlaybackActivity) player).getResources().getConfiguration().orientation == android.content.res.Configuration.ORIENTATION_LANDSCAPE;
-            if (isPlayerLandscape) {
-                setRequestedOrientation(ActivityInfo.SCREEN_ORIENTATION_SENSOR_LANDSCAPE);
-            }
+            applyPlayerOrientation();
+        }
+    }
+
+    /**
+     * Opened over a landscape video: stay in landscape, don't turn to portrait. The player screen tells it
+     * (its own configuration doesn't follow the rotation, see MotherActivity, so ask the player).
+     */
+    private void applyPlayerOrientation() {
+        PlaybackView player = PlaybackPresenter.instance(this).getView();
+        boolean isPlayerLandscape = player instanceof MobilePlaybackActivity && !((MobilePlaybackActivity) player).isFinishing()
+                && ViewManager.instance(this).getTopView() == PlaybackView.class
+                && !(VERSION.SDK_INT >= 24 && ((MobilePlaybackActivity) player).isInPictureInPictureMode())
+                && ((MobilePlaybackActivity) player).isShownInLandscape();
+        // Android 8.0 doesn't allow it on a translucent activity (crash): it rotates with the device there
+        if (VERSION.SDK_INT != 26) {
+            setRequestedOrientation(isPlayerLandscape ? ActivityInfo.SCREEN_ORIENTATION_SENSOR_LANDSCAPE : ActivityInfo.SCREEN_ORIENTATION_UNSPECIFIED);
+        }
+    }
+
+    @Override
+    protected void onNewIntent(android.content.Intent intent) {
+        super.onNewIntent(intent);
+        if (Utils.isMobileBuild(this)) {
+            applyPlayerOrientation(); // singleInstance: the next menu may reuse this screen
         }
     }
 
@@ -103,7 +119,7 @@ public class AppDialogActivity extends MotherActivity {
             lp.bottomMargin = bottomMargin;
             lp.gravity = Gravity.BOTTOM | Gravity.CENTER_HORIZONTAL;
             pane.setLayoutParams(lp);
-            pane.setPadding(0, (int) (20 * density), 0, 0); // room for the handle
+            pane.setPadding(0, (int) (16 * density), 0, 0); // room for the handle
         }
 
         if (!(pane.getBackground() instanceof GradientDrawable) || isLandscape != mIsLandscapeSheet) {
@@ -140,10 +156,44 @@ public class AppDialogActivity extends MotherActivity {
             handle.bringToFront();
         }
 
+        fixTitles(pane, density);
+
         // Tap outside the sheet: close
         if (container != null && !container.hasOnClickListeners()) {
             container.setOnClickListener(v -> finish());
             pane.setClickable(true); // don't close on taps inside
+        }
+    }
+
+    /**
+     * The TV title of the menus is 64dp high with 27dp above it: on phones the same compact header for every menu
+     * (the handle, 8dp, the title, 12dp), whatever the level of the menu.
+     */
+    private void fixTitles(View view, float density) {
+        if (view.getId() == R.id.decor_title && view.getLayoutParams() instanceof ViewGroup.MarginLayoutParams) {
+            ViewGroup.MarginLayoutParams lp = (ViewGroup.MarginLayoutParams) view.getLayoutParams();
+            int top = (int) (8 * density);
+            int bottom = (int) (12 * density);
+            int side = (int) (20 * density);
+            if (lp.height != ViewGroup.LayoutParams.WRAP_CONTENT || lp.topMargin != top || lp.bottomMargin != bottom || lp.getMarginStart() != side) {
+                lp.height = ViewGroup.LayoutParams.WRAP_CONTENT;
+                lp.topMargin = top;
+                lp.bottomMargin = bottom;
+                lp.setMarginStart(side);
+                lp.setMarginEnd(side);
+                view.setLayoutParams(lp);
+                if (view instanceof android.widget.TextView) {
+                    ((android.widget.TextView) view).setTextSize(android.util.TypedValue.COMPLEX_UNIT_SP, 20);
+                }
+            }
+            return;
+        }
+
+        if (view instanceof ViewGroup) {
+            ViewGroup group = (ViewGroup) view;
+            for (int i = 0; i < group.getChildCount(); i++) {
+                fixTitles(group.getChildAt(i), density);
+            }
         }
     }
 

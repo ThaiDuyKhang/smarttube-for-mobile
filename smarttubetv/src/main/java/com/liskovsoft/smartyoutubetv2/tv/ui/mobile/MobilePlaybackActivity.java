@@ -687,7 +687,7 @@ public class MobilePlaybackActivity extends MobileActivity implements PlaybackVi
         mDetails.findViewById(R.id.mobile_watch_dislike).setOnClickListener(v -> clickButton(R.id.action_thumbs_down));
         mDetails.findViewById(R.id.mobile_watch_share).setOnClickListener(v -> clickButton(R.id.action_share));
         mDetails.findViewById(R.id.mobile_watch_save).setOnClickListener(v -> clickButton(R.id.action_playlist_add));
-        mDetails.findViewById(R.id.mobile_watch_speed).setOnClickListener(v -> clickButton(R.id.action_video_speed));
+        mDetails.findViewById(R.id.mobile_watch_speed).setOnClickListener(v -> showSpeedDialog());
         mDetails.findViewById(R.id.mobile_watch_quality).setOnClickListener(v -> clickButton(R.id.lb_control_high_quality));
         mDetails.findViewById(R.id.mobile_watch_repeat).setOnClickListener(v -> clickButton(R.id.action_repeat));
         mDetails.findViewById(R.id.mobile_watch_repeat).setOnLongClickListener(v -> longClickButton(R.id.action_repeat));
@@ -759,9 +759,28 @@ public class MobilePlaybackActivity extends MobileActivity implements PlaybackVi
      */
     private void showQuickSettings() {
         android.app.Dialog dialog = new android.app.Dialog(this, android.R.style.Theme_DeviceDefault_Dialog_NoActionBar);
+        LinearLayout list = newSheetList(null);
+
+        FormatItem videoFormat = mPlayer != null ? getVideoFormat() : null;
+        String quality = videoFormat != null && videoFormat.getHeight() > 0 ? videoFormat.getHeight() + "p" : getString(R.string.mobile_auto);
+        String speed = Helpers.formatFloat(mPlayer != null ? getSpeed() : 1.0f) + "x";
+
+        addQuickRow(list, dialog, R.drawable.mobile_ic_m_quality, getString(R.string.mobile_quality), quality, true, this::showQualityDialog);
+        addQuickRow(list, dialog, R.drawable.mobile_ic_m_gauge, getString(R.string.mobile_playback_speed), speed, true, this::showSpeedDialog);
+        addQuickRow(list, dialog, R.drawable.mobile_ic_m_captions, getString(R.string.mobile_subtitles), null, false, () -> clickButton(R.id.lb_control_closed_captioning));
+        addQuickRow(list, dialog, R.drawable.mobile_ic_m_lock, getString(R.string.mobile_lock_screen), null, false, () -> setScreenLocked(true));
+        addQuickRow(list, dialog, R.drawable.mobile_ic_m_settings, getString(R.string.mobile_more_options_player), null, true, () -> clickButton(R.id.lb_control_high_quality));
+
+        showSheet(dialog, list);
+    }
+
+    /**
+     * Vertical content of a player sheet: the handle bar, then an optional title
+     */
+    private LinearLayout newSheetList(String title) {
         LinearLayout list = new LinearLayout(this);
         list.setOrientation(LinearLayout.VERTICAL);
-        list.setPadding(0, dp(16), 0, dp(8));
+        list.setPadding(0, dp(12), 0, dp(8));
 
         View handle = new View(this);
         android.graphics.drawable.GradientDrawable handleShape = new android.graphics.drawable.GradientDrawable();
@@ -773,18 +792,26 @@ public class MobilePlaybackActivity extends MobileActivity implements PlaybackVi
         handleLp.bottomMargin = dp(8);
         list.addView(handle, handleLp);
 
-        FormatItem videoFormat = mPlayer != null ? getVideoFormat() : null;
-        String quality = videoFormat != null && videoFormat.getHeight() > 0 ? videoFormat.getHeight() + "p" : getString(R.string.mobile_auto);
-        String speed = Helpers.formatFloat(mPlayer != null ? getSpeed() : 1.0f) + "x";
+        if (title != null) {
+            TextView titleView = new TextView(this);
+            titleView.setText(title);
+            titleView.setTextColor(ContextCompat.getColor(this, R.color.mobile_text));
+            titleView.setTextSize(18);
+            titleView.setTypeface(android.graphics.Typeface.DEFAULT_BOLD);
+            titleView.setPadding(dp(20), dp(4), dp(20), dp(8));
+            list.addView(titleView);
+        }
 
-        addQuickRow(list, dialog, R.drawable.mobile_ic_m_quality, getString(R.string.mobile_quality), quality, true, this::showQualityDialog);
-        addQuickRow(list, dialog, R.drawable.mobile_ic_m_gauge, getString(R.string.mobile_playback_speed), speed, true, () -> clickButton(R.id.action_video_speed));
-        addQuickRow(list, dialog, R.drawable.mobile_ic_m_captions, getString(R.string.mobile_subtitles), null, false, () -> clickButton(R.id.lb_control_closed_captioning));
-        addQuickRow(list, dialog, R.drawable.mobile_ic_m_lock, getString(R.string.mobile_lock_screen), null, false, () -> setScreenLocked(true));
-        addQuickRow(list, dialog, R.drawable.mobile_ic_m_settings, getString(R.string.mobile_more_options_player), null, true, () -> clickButton(R.id.lb_control_high_quality));
+        return list;
+    }
 
+    /**
+     * Shows the content as a sheet of the player itself (a dialog of this activity), so it keeps the orientation of the
+     * video: a sheet at the bottom in portrait, a floating panel in landscape. Opaque background of the app theme.
+     */
+    private void showSheet(android.app.Dialog dialog, View content) {
         android.widget.ScrollView scroll = new android.widget.ScrollView(this);
-        scroll.addView(list);
+        scroll.addView(content);
         android.graphics.drawable.GradientDrawable background = new android.graphics.drawable.GradientDrawable();
         float radius = dp(16);
         boolean isLandscape = isLandscape();
@@ -792,6 +819,9 @@ public class MobilePlaybackActivity extends MobileActivity implements PlaybackVi
                 new float[] {radius, radius, radius, radius, 0, 0, 0, 0});
         background.setColor(ContextCompat.getColor(this, R.color.mobile_surface));
         scroll.setBackground(background);
+        if (Build.VERSION.SDK_INT >= 21) {
+            scroll.setClipToOutline(true);
+        }
         dialog.setContentView(scroll);
 
         android.view.Window window = dialog.getWindow();
@@ -848,26 +878,192 @@ public class MobilePlaybackActivity extends MobileActivity implements PlaybackVi
         }
 
         FormatItem current = getVideoFormat();
-        String[] titles = new String[formats.size()];
-        int checked = -1;
-        for (int i = 0; i < formats.size(); i++) {
-            titles[i] = String.valueOf(formats.get(i).getTitle());
-            if (formats.get(i).equals(current)) {
-                checked = i;
-            }
+        android.app.Dialog dialog = new android.app.Dialog(this, android.R.style.Theme_DeviceDefault_Dialog_NoActionBar);
+        LinearLayout list = newSheetList(getString(R.string.mobile_quality));
+
+        for (FormatItem format : formats) {
+            CharSequence title = format.getTitle();
+            // The "no video" entry of the list has no title
+            String text = title != null && !"null".contentEquals(title) ? title.toString() : getString(R.string.mobile_auto);
+            addRadioRow(list, text, format.equals(current), () -> {
+                dialog.dismiss();
+                setFormat(format);
+                PlayerData.instance(this).setFormat(format);
+                bindDetails();
+            });
         }
 
-        new android.app.AlertDialog.Builder(this, com.liskovsoft.smartyoutubetv2.common.utils.MobileThemeHelper.isLight(this) ?
-                android.R.style.Theme_DeviceDefault_Light_Dialog_Alert : android.R.style.Theme_DeviceDefault_Dialog_Alert)
-                .setTitle(R.string.mobile_quality)
-                .setSingleChoiceItems(titles, checked, (d, which) -> {
-                    d.dismiss();
-                    FormatItem format = formats.get(which);
-                    setFormat(format);
-                    PlayerData.instance(this).setFormat(format);
-                    bindDetails();
-                })
-                .show();
+        showSheet(dialog, list);
+    }
+
+    private void addRadioRow(LinearLayout list, String title, boolean checked, Runnable action) {
+        LinearLayout row = new LinearLayout(this);
+        row.setOrientation(LinearLayout.HORIZONTAL);
+        row.setGravity(android.view.Gravity.CENTER_VERTICAL);
+        row.setPadding(dp(20), 0, dp(20), 0);
+        row.setMinimumHeight(dp(52));
+        row.setBackgroundResource(R.drawable.mobile_ripple);
+
+        android.widget.RadioButton radio = new android.widget.RadioButton(this);
+        radio.setChecked(checked);
+        radio.setClickable(false);
+        radio.setFocusable(false);
+        if (Build.VERSION.SDK_INT >= 21) {
+            radio.setButtonTintList(new android.content.res.ColorStateList(
+                    new int[][] {{android.R.attr.state_checked}, {}},
+                    new int[] {ContextCompat.getColor(this, R.color.mobile_accent), ContextCompat.getColor(this, R.color.mobile_text_secondary)}));
+        }
+        row.addView(radio, new LinearLayout.LayoutParams(ViewGroup.LayoutParams.WRAP_CONTENT, ViewGroup.LayoutParams.WRAP_CONTENT));
+
+        TextView text = new TextView(this);
+        text.setText(title);
+        text.setTextColor(ContextCompat.getColor(this, R.color.mobile_text));
+        text.setTextSize(16);
+        LinearLayout.LayoutParams textLp = new LinearLayout.LayoutParams(0, ViewGroup.LayoutParams.WRAP_CONTENT, 1);
+        textLp.leftMargin = dp(16);
+        row.addView(text, textLp);
+
+        row.setOnClickListener(v -> action.run());
+        list.addView(row, new LinearLayout.LayoutParams(ViewGroup.LayoutParams.MATCH_PARENT, ViewGroup.LayoutParams.WRAP_CONTENT));
+    }
+
+    private static final float SPEED_MIN = 0.25f;
+    private static final float SPEED_MAX = 3.0f;
+    private static final float SPEED_STEP = 0.05f;
+    private static final float[] SPEED_PRESETS = {1.0f, 1.25f, 1.5f, 2.0f, 3.0f};
+
+    /**
+     * Playback speed like the YouTube app: the value, a slider with - and + (0.05 steps) and the usual speeds
+     */
+    private void showSpeedDialog() {
+        android.app.Dialog dialog = new android.app.Dialog(this, android.R.style.Theme_DeviceDefault_Dialog_NoActionBar);
+        LinearLayout list = newSheetList(null);
+        int text = ContextCompat.getColor(this, R.color.mobile_text);
+        int steps = Math.round((SPEED_MAX - SPEED_MIN) / SPEED_STEP);
+
+        TextView value = new TextView(this);
+        value.setTextColor(text);
+        value.setTextSize(18);
+        value.setTypeface(android.graphics.Typeface.DEFAULT_BOLD);
+        value.setGravity(android.view.Gravity.CENTER);
+        value.setPadding(0, dp(8), 0, dp(4));
+        list.addView(value);
+
+        LinearLayout sliderRow = new LinearLayout(this);
+        sliderRow.setOrientation(LinearLayout.HORIZONTAL);
+        sliderRow.setGravity(android.view.Gravity.CENTER_VERTICAL);
+        sliderRow.setPadding(dp(12), 0, dp(12), 0);
+        android.widget.SeekBar slider = new android.widget.SeekBar(this);
+        slider.setMax(steps);
+        slider.setProgressDrawable(ContextCompat.getDrawable(this, R.drawable.mobile_speed_seek));
+        slider.setThumb(ContextCompat.getDrawable(this, R.drawable.mobile_speed_thumb));
+        slider.setMinimumHeight(dp(24));
+        if (Build.VERSION.SDK_INT >= 21) {
+            slider.setSplitTrack(false);
+        }
+        LinearLayout presets = new LinearLayout(this);
+        presets.setOrientation(LinearLayout.HORIZONTAL);
+        presets.setPadding(dp(12), dp(12), dp(12), dp(6));
+
+        float[] current = {mPlayer != null ? getSpeed() : 1.0f};
+        Runnable[] refresh = new Runnable[1];
+        FloatAction apply = speed -> {
+            float rounded = Math.round(Math.max(SPEED_MIN, Math.min(SPEED_MAX, speed)) / SPEED_STEP) * SPEED_STEP;
+            rounded = Math.round(rounded * 100) / 100f;
+            current[0] = rounded;
+            setSpeed(rounded);
+            refresh[0].run();
+        };
+
+        TextView minus = newRoundButton("−", () -> apply.run(current[0] - SPEED_STEP));
+        TextView plus = newRoundButton("+", () -> apply.run(current[0] + SPEED_STEP));
+        sliderRow.addView(minus, new LinearLayout.LayoutParams(dp(44), dp(44)));
+        LinearLayout.LayoutParams sliderLp = new LinearLayout.LayoutParams(0, ViewGroup.LayoutParams.WRAP_CONTENT, 1);
+        sliderLp.leftMargin = dp(4);
+        sliderLp.rightMargin = dp(4);
+        sliderRow.addView(slider, sliderLp);
+        sliderRow.addView(plus, new LinearLayout.LayoutParams(dp(44), dp(44)));
+        list.addView(sliderRow);
+
+        List<TextView> presetViews = new java.util.ArrayList<>();
+        for (int i = 0; i < SPEED_PRESETS.length; i++) {
+            float preset = SPEED_PRESETS[i];
+            LinearLayout cell = new LinearLayout(this);
+            cell.setOrientation(LinearLayout.VERTICAL);
+            TextView pill = new TextView(this);
+            pill.setText(String.format(java.util.Locale.getDefault(), preset * 10 % 1 == 0 ? "%.1f" : "%.2f", preset));
+            pill.setGravity(android.view.Gravity.CENTER);
+            pill.setTextSize(14);
+            pill.setTypeface(android.graphics.Typeface.DEFAULT_BOLD);
+            pill.setOnClickListener(v -> apply.run(preset));
+            cell.addView(pill, new LinearLayout.LayoutParams(ViewGroup.LayoutParams.MATCH_PARENT, dp(36)));
+            LinearLayout.LayoutParams cellLp = new LinearLayout.LayoutParams(0, ViewGroup.LayoutParams.WRAP_CONTENT, 1);
+            cellLp.leftMargin = dp(4);
+            cellLp.rightMargin = dp(4);
+            presets.addView(cell, cellLp);
+            presetViews.add(pill);
+        }
+        list.addView(presets);
+
+        TextView normal = new TextView(this);
+        normal.setText(R.string.mobile_speed_normal);
+        normal.setTextColor(ContextCompat.getColor(this, R.color.mobile_text_secondary));
+        normal.setTextSize(12);
+        normal.setPadding(dp(20), 0, dp(20), dp(8));
+        list.addView(normal);
+
+        refresh[0] = () -> {
+            value.setText(String.format(java.util.Locale.US, "%.2fx", current[0]));
+            slider.setProgress(Math.round((current[0] - SPEED_MIN) / SPEED_STEP));
+            for (int i = 0; i < presetViews.size(); i++) {
+                boolean selected = Math.abs(SPEED_PRESETS[i] - current[0]) < 0.001f;
+                TextView pill = presetViews.get(i);
+                pill.setBackgroundResource(selected ? R.drawable.mobile_speed_pill_selected : R.drawable.mobile_speed_pill);
+                pill.setTextColor(ContextCompat.getColor(this, selected ? R.color.mobile_text_on_light : R.color.mobile_text));
+            }
+            minus.setEnabled(current[0] > SPEED_MIN + 0.001f);
+            minus.setAlpha(minus.isEnabled() ? 1f : 0.4f);
+            plus.setEnabled(current[0] < SPEED_MAX - 0.001f);
+            plus.setAlpha(plus.isEnabled() ? 1f : 0.4f);
+        };
+        refresh[0].run();
+
+        slider.setOnSeekBarChangeListener(new android.widget.SeekBar.OnSeekBarChangeListener() {
+            @Override
+            public void onProgressChanged(android.widget.SeekBar seekBar, int progress, boolean fromUser) {
+                if (fromUser) {
+                    // Show the value while dragging, apply it when released
+                    current[0] = Math.round((SPEED_MIN + progress * SPEED_STEP) * 100) / 100f;
+                    value.setText(String.format(java.util.Locale.US, "%.2fx", current[0]));
+                }
+            }
+
+            @Override
+            public void onStartTrackingTouch(android.widget.SeekBar seekBar) {
+            }
+
+            @Override
+            public void onStopTrackingTouch(android.widget.SeekBar seekBar) {
+                apply.run(current[0]);
+            }
+        });
+
+        showSheet(dialog, list);
+    }
+
+    private interface FloatAction {
+        void run(float value);
+    }
+
+    private TextView newRoundButton(String text, Runnable action) {
+        TextView button = new TextView(this);
+        button.setText(text);
+        button.setGravity(android.view.Gravity.CENTER);
+        button.setTextSize(22);
+        button.setTextColor(ContextCompat.getColor(this, R.color.mobile_text));
+        button.setBackgroundResource(R.drawable.mobile_round_button_bg);
+        button.setOnClickListener(v -> action.run());
+        return button;
     }
 
     /**
@@ -939,6 +1135,13 @@ public class MobilePlaybackActivity extends MobileActivity implements PlaybackVi
     private boolean isPhone() {
         android.util.DisplayMetrics metrics = Resources.getSystem().getDisplayMetrics();
         return Math.min(metrics.widthPixels, metrics.heightPixels) / metrics.density < 600;
+    }
+
+    /**
+     * The player is shown in landscape right now (the menus opened from it must keep this orientation)
+     */
+    public boolean isShownInLandscape() {
+        return mRoot != null && (mIsFullscreen || isLandscape());
     }
 
     private boolean isLandscape() {

@@ -20,4 +20,9 @@
     <color name="mobile_link">#3EA6FF</color>
     <color name="mobile_badge_bg">#CC000000</color>
     <color name="mobile_ripple">#1F000000</color>
+    <!-- Switches (like the YouTube app) -->
+    <color name="mobile_switch_track_on">#0F0F0F</color>
+    <color name="mobile_switch_thumb_on">#FFFFFF</color>
+    <color name="mobile_switch_track_off">#D6D6D6</color>
+    <color name="mobile_switch_thumb_off">#FFFFFF</color>
 </resources>
