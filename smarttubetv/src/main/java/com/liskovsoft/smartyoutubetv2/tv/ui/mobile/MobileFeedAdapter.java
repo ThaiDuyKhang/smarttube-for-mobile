@@ -159,8 +159,9 @@ public class MobileFeedAdapter extends RecyclerView.Adapter<RecyclerView.ViewHol
         }
 
         /** A row of chips filled by the callback */
-        public static Item chips(Object owner) {
-            return new Item(TYPE_CHIPS, null, null, null, null, makeId(TYPE_CHIPS, owner));
+        public static Item chips(Object owner, String state) {
+            // The state (e.g. the chosen chip) is in the title: a new state redraws the row
+            return new Item(TYPE_CHIPS, null, null, state, null, makeId(TYPE_CHIPS, owner));
         }
 
         public static Item youHeader() {

@@ -1028,12 +1028,12 @@ public class MobileBrowseActivity extends MobileActivity implements BrowseView, 
         }
 
         items.add(MobileFeedAdapter.Item.header(getString(R.string.mobile_library), mLibraryHeaderOwner));
-        items.add(MobileFeedAdapter.Item.chips(mLibraryHeaderOwner));
+        items.add(MobileFeedAdapter.Item.chips(mLibraryHeaderOwner, String.valueOf(getYouChip())));
 
         // The chosen library chip: its list right here (like the YouTube app)
         if (MobileUi.isSignedIn()) {
             int chip = getYouChip();
-            List<Video> content = mYouContent.get(chip);
+            List<Video> content = chip == YOU_CHIP_RECENT ? getHistoryVideos() : mYouContent.get(chip);
             if (content == null) {
                 loadYouContent(chip);
             } else {
@@ -1061,6 +1061,17 @@ public class MobileBrowseActivity extends MobileActivity implements BrowseView, 
         MobileOrder.sort(this, ORDER_LIBRARY, library, section -> "section_" + section.getId());
 
         int selectedChip = getYouChip();
+
+        // "Recent": your last watched videos, first like the YouTube app
+        TextView recent = createChip(getString(R.string.mobile_recent), selectedChip == YOU_CHIP_RECENT);
+        recent.setOnClickListener(v -> {
+            mYouChip = YOU_CHIP_RECENT;
+            rebuildFeed();
+        });
+        LinearLayout.LayoutParams recentLp = new LinearLayout.LayoutParams(ViewGroup.LayoutParams.WRAP_CONTENT, dp(32));
+        recentLp.setMarginStart(dp(8));
+        chips.addView(recent, recentLp);
+
         for (BrowseSection section : library) {
             boolean isInline = isInlineYouChip(section.getId());
             TextView chip = createChip(section.getId() == MediaGroup.TYPE_CHANNEL_UPLOADS ?
@@ -1077,8 +1088,18 @@ public class MobileBrowseActivity extends MobileActivity implements BrowseView, 
             LinearLayout.LayoutParams lp = new LinearLayout.LayoutParams(ViewGroup.LayoutParams.WRAP_CONTENT, dp(32));
             lp.setMarginStart(dp(8));
             chips.addView(chip, lp);
-            MobileDragReorder.attach(chip, "section_" + section.getId(), chips, 0, keys -> MobileOrder.save(this, ORDER_LIBRARY, keys), null);
+            MobileDragReorder.attach(chip, "section_" + section.getId(), chips, 1, keys -> MobileOrder.save(this, ORDER_LIBRARY, keys), null);
         }
+    }
+
+    private static final int YOU_CHIP_RECENT = -100;
+
+    private List<Video> getHistoryVideos() {
+        List<Video> videos = new ArrayList<>();
+        for (Block block : mBlocks) {
+            videos.addAll(block.videos);
+        }
+        return videos;
     }
 
     private static boolean isInlineYouChip(int sectionId) {
@@ -1089,6 +1110,9 @@ public class MobileBrowseActivity extends MobileActivity implements BrowseView, 
      * The chosen library chip of the You page (playlists by default, like the YouTube app)
      */
     private int getYouChip() {
+        if (mYouChip == YOU_CHIP_RECENT) {
+            return mYouChip;
+        }
         if (mYouChip == 0 || findSection(mYouChip) == null) {
             mYouChip = findSection(MediaGroup.TYPE_USER_PLAYLISTS) != null ? MediaGroup.TYPE_USER_PLAYLISTS : MediaGroup.TYPE_CHANNEL_UPLOADS;
         }

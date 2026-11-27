@@ -1,132 +1,145 @@
 # SmartTube Mobile
 
-Bản **SmartTube cho điện thoại và máy tính bảng Android**, dựng trên mã nguồn gốc của
-[SmartTube](https://github.com/yuliskov/SmartTube) (tác giả [yuliskov](https://github.com/yuliskov), giấy phép MIT).
+**Xem YouTube không quảng cáo trên điện thoại và máy tính bảng Android**, giao diện quen thuộc như app YouTube.
 
-Ứng dụng giữ **nguyên vẹn giao diện và toàn bộ tính năng** của SmartTube trên TV: chặn quảng cáo, SponsorBlock, DeArrow,
-chỉnh tốc độ phát, 8K/HDR/60fps, live chat, đăng nhập tài khoản, nhiều tài khoản, điều khiển từ xa... Phần được bổ sung
-chỉ nhằm để app dùng tốt bằng **màn hình cảm ứng** trên điện thoại và tablet.
+Dựng trên mã nguồn mở của [SmartTube](https://github.com/yuliskov/SmartTube) (tác giả [yuliskov](https://github.com/yuliskov), giấy phép MIT),
+vốn chỉ dành cho Android TV. SmartTube Mobile đem các tính năng đó lên điện thoại với giao diện cảm ứng làm lại từ đầu.
 
-![Trang chủ](docs/screenshots/browse_home.jpg)
+**[⬇️ Tải bản mới nhất](https://github.com/ThaiDuyKhang/smarttube-for-mobile/releases/latest)** · Miễn phí · Không quảng cáo · Mã nguồn mở
 
-| Trình phát | Menu khi chạm giữ | Cài đặt | Tìm kiếm |
+| Trang chủ | Shorts | Xem video | Bạn |
 | --- | --- | --- | --- |
-| ![](docs/screenshots/player_controls.jpg) | ![](docs/screenshots/context_menu.jpg) | ![](docs/screenshots/settings.jpg) | ![](docs/screenshots/search_keyboard.jpg) |
+| ![Trang chủ](docs/screenshots/home.jpg) | ![Shorts](docs/screenshots/shorts.jpg) | ![Xem video](docs/screenshots/watch.jpg) | ![Bạn](docs/screenshots/you.jpg) |
 
-Chế độ dọc:
+| Giao diện sáng | Trang Bạn (sáng) | Menu khám phá | Tìm kiếm |
+| --- | --- | --- | --- |
+| ![Giao diện sáng](docs/screenshots/home_light.jpg) | ![Trang Bạn sáng](docs/screenshots/you_light.jpg) | ![Menu khám phá](docs/screenshots/explore.jpg) | ![Tìm kiếm](docs/screenshots/search.jpg) |
 
-| Kênh | Trình phát | Cài đặt |
-| --- | --- | --- |
-| ![](docs/screenshots/portrait_channel.jpg) | ![](docs/screenshots/portrait_player.jpg) | ![](docs/screenshots/portrait_settings.jpg) |
-
-## Khác gì so với bản TV
-
-| | Bản TV (gốc) | SmartTube Mobile |
-| --- | --- | --- |
-| Thiết bị | Android TV, TV box, Fire TV | Điện thoại, máy tính bảng Android 5.0 trở lên |
-| Hướng màn hình | Ngang (TV) | **Dọc và ngang**, xoay tự do theo cảm biến (tôn trọng khóa xoay của hệ thống) |
-| Chạm vào video, nút, mục cài đặt | Chạm lần 1 chỉ chọn, lần 2 mới mở | **Chạm 1 lần là mở** |
-| Thanh hệ thống sau khi gõ phím | Có thể nằm đè lên nội dung | Tự ẩn lại khi bàn phím đóng |
-| Sửa từ khóa khi đang xem kết quả tìm kiếm | Cần phím Lên của điều khiển | Chạm vào vùng trống phía trên kết quả |
-| Lưới (Cài đặt, kênh, playlist) | Số cột cố định theo màn hình TV | Số cột tự tính theo bề ngang, tự cập nhật khi xoay |
-| Trình phát ở chế độ dọc | — | Các nút co lại vừa màn hình, thông tin thời gian xếp xuống dưới |
-| Mã đăng nhập ở chế độ dọc | — | Hiển thị đầy đủ (ảnh QR thu nhỏ, chữ tự vừa) |
-| Mã ứng dụng | `org.smarttube.beta` / `org.smarttube.stable` | `app.smarttube.mobile` (cài song song được với bản TV) |
-| Tự cập nhật trong app | Có (tải bản TV) | Tắt, tải bản mới ở mục Releases |
-
-Mọi thay đổi chỉ có hiệu lực ở bản mobile (flavor `stmobile`). Các bản TV `stbeta`, `ststable`, `stfdroid` vẫn build và
-hoạt động như bản gốc.
-
-## Cài đặt
-
-1. Vào mục **Releases** của repo này và tải file APK phù hợp:
-   - `SmartTube_mobile_..._arm64-v8a.apk`: hầu hết điện thoại và tablet từ năm 2017 trở lại đây (**nên chọn**)
-   - `SmartTube_mobile_..._armeabi-v7a.apk`: máy đời cũ (32-bit)
-   - `SmartTube_mobile_..._universal.apk`: nếu không chắc máy mình thuộc loại nào (file lớn hơn)
-   - `x86`, `x86_64`: Chromebook, trình giả lập
-2. Mở file APK và cho phép "Cài đặt ứng dụng không rõ nguồn gốc" khi được hỏi.
-3. Bản mới: tải APK mới và cài đè lên. Cài đè chỉ được khi các bản đều ký bằng cùng một khóa (xem phần "Ký APK").
-
-> Chỉ tải APK từ repo này. Không cài bản đăng lại trên các trang APK khác.
-
-## Thao tác cảm ứng
-
-| Thao tác | Kết quả |
+| Cài đặt | Giao diện sáng/tối |
 | --- | --- |
-| Chạm vào video, kênh, nút, mục cài đặt | Mở ngay |
-| Chạm giữ video | Menu: thêm vào playlist, mở kênh, chặn kênh, phát tiếp theo... |
-| Chạm mục ở menu bên trái | Lần 1: xem trước mục đó. Lần 2: vào nội dung (thiết kế gốc của SmartTube) |
-| Nút Back hoặc vuốt từ mép trái | Quay lại hoặc mở menu bên trái |
-| Chạm vào video đang phát | Hiện hoặc ẩn bảng điều khiển |
-| Chạm đúp nửa trái hoặc nửa phải video | Tua lùi hoặc tua tới |
-| Kéo thanh thời gian | Tua đến vị trí mong muốn |
-| Khi đang xem kết quả tìm kiếm, chạm vùng trống phía trên | Hiện lại ô tìm kiếm để sửa từ khóa |
+| ![Cài đặt](docs/screenshots/settings.jpg) | ![Chọn giao diện](docs/screenshots/theme_dialog.jpg) |
 
-**Đăng nhập:** Settings → Accounts → Sign in. Mã hiện trên màn hình, bấm **Login from browser** để mở trang đăng nhập ngay
-trên điện thoại, hoặc nhập mã ở https://yt.be/activate trên thiết bị khác.
+| Xem toàn màn hình | Cài đặt nhanh khi xem |
+| --- | --- |
+| ![Toàn màn hình](docs/screenshots/fullscreen.jpg) | ![Cài đặt nhanh](docs/screenshots/quick_settings.jpg) |
 
-## Build từ mã nguồn
+## Tính năng
 
-Yêu cầu: JDK 17, Android SDK (platform 34, build-tools 30.0.3).
+**Xem video**
+- Chặn quảng cáo; tự bỏ qua đoạn quảng cáo của người làm video ([SponsorBlock](https://sponsor.ajay.app)); tiêu đề và ảnh đúng nội dung ([DeArrow](https://dearrow.ajay.app))
+- Chất lượng cao đến 4K, 60fps, HDR (tuỳ máy); chỉnh tốc độ phát, phụ đề, ngôn ngữ âm thanh
+- **Phát nền**: tắt màn hình hoặc mở app khác vẫn nghe tiếp, có nút điều khiển trên màn hình khóa
+- **Hình trong hình (PiP)**: bấm Quay lại hoặc Home khi đang xem, video thu nhỏ ở góc màn hình
+- Toàn màn hình khi xoay ngang, chạm đúp để tua 10 giây, khoá màn hình khi xem
+- Shorts toàn màn hình, vuốt lên để xem video tiếp theo
+
+**Giao diện giống app YouTube**
+- 4 tab: Trang chủ, Shorts, Kênh đăng ký, Bạn (hiện ảnh đại diện khi đã đăng nhập)
+- Hàng chip lọc (Tất cả, Âm nhạc, Thể thao, Trực tiếp… và **Đề xuất mới**), thanh trên cùng tự ẩn khi cuộn
+- Trang kênh, trang tất cả kênh đã đăng ký, trang Bạn với lịch sử xem và thư viện
+- **Giao diện sáng, tối** hoặc theo điện thoại
+- Nhấn giữ rồi kéo để sắp xếp lại menu, chip lọc và mục cài đặt theo ý bạn
+
+**Tài khoản**
+- Đăng nhập tài khoản YouTube để thích, lưu vào danh sách phát, đăng ký kênh, xem lịch sử
+- Nhiều tài khoản, chuyển qua lại nhanh
+
+**Cập nhật ngay trong app**: Cài đặt → Cài đặt khác → Kiểm tra cập nhật.
+
+## Tải về và cài đặt
+
+### 1. Chọn đúng file
+
+Vào trang **[Releases](https://github.com/ThaiDuyKhang/smarttube-for-mobile/releases/latest)**, kéo xuống mục **Assets** và tải **một** file:
+
+| File | Dùng cho |
+| --- | --- |
+| `SmartTube_mobile_..._arm64-v8a.apk` | **Hầu hết điện thoại, máy tính bảng từ năm 2017 trở lại đây. Nên chọn file này.** |
+| `SmartTube_mobile_..._armeabi-v7a.apk` | Máy đời cũ (chip 32-bit) |
+| `SmartTube_mobile_..._universal.apk` | Không biết máy mình loại nào: file này chạy trên mọi máy (dung lượng lớn hơn) |
+| `..._x86.apk`, `..._x86_64.apk` | Chromebook, máy tính bảng chip Intel, trình giả lập |
+
+Không chắc máy loại nào thì tải bản **universal**. Cài nhầm bản không hợp máy thì Android chỉ báo
+"Ứng dụng chưa được cài đặt", không ảnh hưởng gì đến máy.
+
+**Yêu cầu:** Android 5.0 trở lên. **Không có bản cho iPhone/iPad** (iOS không cài được file APK).
+
+### 2. Cài đặt
+
+1. Mở file APK vừa tải (trong thông báo tải xuống hoặc ứng dụng **Tệp / File**).
+2. Nếu Android hỏi **"Cho phép cài ứng dụng từ nguồn này?"**: bật cho phép rồi quay lại.
+3. Nếu **Google Play Protect** cảnh báo ứng dụng không rõ nguồn: bấm **Thêm chi tiết** → **Vẫn cài đặt**.
+   Cảnh báo này xuất hiện với mọi app không tải từ CH Play; mã nguồn của app công khai ở repo này.
+4. Bấm **Cài đặt**, rồi **Mở**.
+
+### 3. Đăng nhập (không bắt buộc)
+
+1. Vào tab **Bạn** → **Đăng nhập**.
+2. Bấm **Đăng nhập từ trình duyệt** (mã đã được sao chép sẵn), dán mã vào trang Google vừa mở và chọn tài khoản.
+   Hoặc dùng máy khác quét mã QR, hay mở https://yt.be/activate và nhập mã.
+3. Quay lại app, bấm **Đã xong**.
+
+App dùng cách đăng nhập bằng mã thiết bị của Google: bạn nhập mật khẩu trên trang của Google, app không nhìn thấy mật khẩu.
+
+### 4. Cập nhật lên bản mới
+
+- Trong app: **Bạn → ⚙️ Cài đặt → Cài đặt khác → Kiểm tra cập nhật → Tải và cài đặt**.
+  Lần đầu, Android hỏi cho phép SmartTube cài ứng dụng: bật cho phép rồi quay lại.
+- Hoặc tải APK mới ở trang Releases và cài đè lên bản đang có.
+
+Cập nhật **giữ nguyên** tài khoản, cài đặt và lịch sử. **Không gỡ app trước khi cập nhật**: gỡ app sẽ mất đăng nhập và cài đặt.
+
+> Chỉ tải SmartTube Mobile từ trang Releases của repo này. Không cài bản đăng lại trên các trang APK khác.
+
+## Câu hỏi thường gặp
+
+**Video không phát hoặc báo lỗi?**
+YouTube thay đổi thường xuyên: vào **Kiểm tra cập nhật** để lấy bản mới nhất. Vẫn lỗi thì thử
+Cài đặt → Trình phát video → đổi **Trình xử lý mạng**.
+
+**Tắt màn hình thì mất tiếng?**
+Trên trang xem video, bật nút **Phát nền**. Trên Android 13 trở lên, cho phép app gửi thông báo để có nút điều khiển
+trên màn hình khóa. Một số máy (Xiaomi, Oppo, Samsung…) cần tắt **Tối ưu pin** cho SmartTube trong cài đặt điện thoại.
+
+**Không thấy cửa sổ nhỏ (PiP)?**
+Cài đặt điện thoại → Ứng dụng → SmartTube Mobile → **Hình trong hình** → Cho phép.
+
+**Cài song song với SmartTube bản TV được không?**
+Được. SmartTube Mobile có mã ứng dụng riêng (`app.smarttube.mobile`).
+
+**App có gửi dữ liệu của tôi đi đâu không?**
+App không chạy quảng cáo hay công cụ theo dõi. App chỉ kết nối tới YouTube, tới SponsorBlock/DeArrow nếu bạn bật
+hai tính năng này, và tới GitHub khi kiểm tra cập nhật.
+
+## Ủng hộ tác giả
+
+SmartTube Mobile hoàn toàn miễn phí. Nếu thấy hữu ích, bạn có thể ủng hộ tác giả một ly cà phê:
+trong app vào **Cài đặt → Trợ giúp và phiên bản → Ủng hộ tác giả** (mã QR ngân hàng MB Bank).
+
+Báo lỗi hoặc góp ý: mở một [Issue](https://github.com/ThaiDuyKhang/smarttube-for-mobile/issues) kèm ảnh chụp màn hình.
+
+## Dành cho nhà phát triển
+
+Yêu cầu: JDK 17, Android SDK (platform 34).
 
 ```bash
-git clone --recurse-submodules https://github.com/ThaiDuyKhang/smarttube-for-mobile.git
+git clone https://github.com/ThaiDuyKhang/smarttube-for-mobile.git
 cd smarttube-for-mobile
 ./gradlew :smarttubetv:assembleStmobileDebug
 ```
 
 APK nằm ở `smarttubetv/build/outputs/apk/stmobile/`.
 
-### Ký APK (bản release)
-
-Tạo file `keystore.properties` ở thư mục gốc. File này đã có trong `.gitignore`, **không commit**.
-
-```properties
-storePassword=...
-keyAlias=...
-keyPassword=...
-storeFile=/đường/dẫn/tới/khoa.jks
-```
-
-Sau đó chạy `./gradlew :smarttubetv:assembleStmobileRelease`.
-
-### Build tự động bằng GitHub Actions
-
-Workflow `.github/workflows/mobile.yml` chạy lint và build APK mỗi khi có push lên `main`.
-Để có bản release đã ký và tự đăng lên mục Releases khi đẩy tag (ví dụ `v32.83-mobile.1`), thêm các secret sau
-trong *Settings → Secrets and variables → Actions*:
-
-| Secret | Giá trị |
-| --- | --- |
-| `SIGNING_KEY` | Nội dung file `.jks` mã hóa base64 (`base64 -w0 khoa.jks`) |
-| `KEY_STORE_PASSWORD` | Mật khẩu keystore |
-| `ALIAS` | Alias của khóa |
-| `KEY_PASSWORD` | Mật khẩu khóa |
-
-Nếu chưa có secret, workflow sẽ build bản debug và đính kèm APK vào lần chạy workflow (mục Artifacts).
-
-## Giới hạn
-
-- Chỉ chạy trên **Android**. iPhone và iPad không cài được APK.
-- Khi menu bên trái đang mở, phần nội dung xem trước bị đẩy sang phải (giống bản TV). Chạm lại vào mục menu
-  để vào nội dung toàn màn hình.
-- Các mục chỉ dành cho TV (Auto Frame Rate, kênh trên màn hình chính Android TV) vẫn còn trong cài đặt nhưng không có
-  tác dụng trên điện thoại.
-
-## Cấu trúc thay đổi (cho người đóng góp)
-
-- `smarttubetv/build.gradle`, `common/build.gradle`, `leanbackassistant/build.gradle`: flavor `stmobile`
-- `smarttubetv/src/stmobile/`: manifest (không bắt buộc leanback, touchscreen, usb, bluetooth), tên app, icon
-- `common/.../misc/SingleTapClickHelper.java`: chạm 1 lần để mở
-- `common/.../misc/SystemBarsHelper.java`, `MotherActivity.java`: xoay dọc/ngang, giữ chế độ toàn màn hình
-- `smarttubetv/.../mod/fragments/GridRelayoutHelper.java`, `GridFragment.java`, `MultiGridFragment.java`: tính lại lưới khi xoay
-- `smarttubetv/.../playerglue/tweaks/ControlBar.java`, `ControlsInfoLayout.java`: bảng điều khiển trình phát ở chế độ dọc
-- `smarttubetv/.../common/GuidanceFitHelper.java`: màn hình đăng nhập ở chế độ dọc
-- `smarttubetv/.../search/SearchSupportFragment.java`: chạm để hiện lại ô tìm kiếm
-- `common/.../utils/Utils.java`: `isMobileBuild()`, kích thước màn hình thật khi ẩn thanh hệ thống
+- Giao diện điện thoại: `smarttubetv/src/main/java/.../tv/ui/mobile/` (trang chủ, xem video, tìm kiếm, kênh, cập nhật…),
+  layout `mobile_*.xml`, chuỗi chữ `common/src/main/res/values*/mobile_strings.xml`.
+- Flavor `stmobile` (manifest ở `smarttubetv/src/stmobile/`). Các bản TV (`stbeta`, `ststable`…) không thay đổi.
+- **Phát hành:** đẩy tag dạng `v32.83-mobile.<số>` (số sau lớn hơn số trước). GitHub Actions (`.github/workflows/mobile.yml`)
+  build, ký và đăng APK lên Releases. Cần các secret `SIGNING_KEY` (file `.jks` dạng base64), `KEY_STORE_PASSWORD`,
+  `ALIAS`, `KEY_PASSWORD`. Tính năng cập nhật trong app đọc số cuối của tag để so sánh phiên bản.
 
 ## Bản quyền
 
 - Mã nguồn gốc: © 2020-present [yuliskov](https://github.com/yuliskov) và các cộng tác viên SmartTube, giấy phép [MIT](LICENSE).
+- Icon: [Lucide](https://lucide.dev) (giấy phép ISC, xem [docs/licenses](docs/licenses)).
 - README gốc của SmartTube: [docs/README-upstream.md](docs/README-upstream.md).
-- Dự án không liên kết với YouTube hay Google.
+- Dự án không liên kết với YouTube hay Google. YouTube là nhãn hiệu của Google LLC.

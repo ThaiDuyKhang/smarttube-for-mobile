@@ -126,4 +126,5 @@
     <string name="mobile_unlock">Nhấn để mở khoá</string>
     <string name="mobile_auto">Tự động</string>
     <string name="mobile_playback_speed">Tốc độ phát</string>
+    <string name="mobile_recent">Gần đây</string>
 </resources>

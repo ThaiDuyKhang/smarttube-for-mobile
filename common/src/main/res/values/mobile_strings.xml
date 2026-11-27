@@ -128,4 +128,5 @@
     <string name="mobile_unlock">Tap to unlock</string>
     <string name="mobile_auto">Auto</string>
     <string name="mobile_playback_speed">Playback speed</string>
+    <string name="mobile_recent">Recent</string>
 </resources>
