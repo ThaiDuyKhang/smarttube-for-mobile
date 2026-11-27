@@ -266,7 +266,7 @@
                         <LinearLayout
                             android:id="@+id/mobile_fullscreen_actions"
                             android:layout_width="wrap_content"
-                            android:layout_height="34dp"
+                            android:layout_height="44dp"
                             android:orientation="horizontal" />
                     </HorizontalScrollView>
                 </LinearLayout>

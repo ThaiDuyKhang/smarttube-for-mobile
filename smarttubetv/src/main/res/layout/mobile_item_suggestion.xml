@@ -29,7 +29,7 @@
         android:id="@+id/mobile_suggestion_fill"
         android:layout_width="52dp"
         android:layout_height="52dp"
-        android:background="?android:attr/selectableItemBackground"
+        android:background="@drawable/mobile_ripple_borderless"
         android:contentDescription="@string/mobile_fill_query"
         android:src="@drawable/mobile_ic_arrow_fill" />
 </LinearLayout>

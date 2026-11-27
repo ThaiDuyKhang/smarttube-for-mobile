@@ -67,8 +67,12 @@ public class AppDataSourceManager {
     }
 
     public static void startMobileUpdates(Context context) {
+        startMobileActivity(context, "com.liskovsoft.smartyoutubetv2.tv.ui.mobile.MobileUpdateActivity");
+    }
+
+    private static void startMobileActivity(Context context, String className) {
         android.content.Intent intent = new android.content.Intent();
-        intent.setClassName(context, "com.liskovsoft.smartyoutubetv2.tv.ui.mobile.MobileUpdateActivity");
+        intent.setClassName(context, className);
         intent.addFlags(android.content.Intent.FLAG_ACTIVITY_NEW_TASK);
         context.startActivity(intent);
     }
@@ -109,18 +113,24 @@ public class AppDataSourceManager {
         settingItems.add(new SettingsItem(
                 context.getString(R.string.app_backup_restore), () -> BackupSettingsPresenter.instance(context).show(), R.drawable.settings_backup));
 
-        if (Helpers.equalsAny(context.getPackageName(), Utils.KNOWN_PACKAGES)) {
+        if (Utils.isMobileBuild(context)) {
+            // Phones: the About items as rows of their own (check for updates, version, source code, support the author)
+            String repo = "https://github.com/ThaiDuyKhang/smarttube-for-mobile";
+            settingItems.add(new SettingsItem(context.getString(R.string.mobile_check_updates),
+                    () -> startMobileUpdates(context), R.drawable.settings_update));
+            settingItems.add(new SettingsItem(
+                    context.getString(R.string.mobile_version, com.liskovsoft.sharedutils.helpers.AppInfoHelpers.getAppVersionName(context)),
+                    () -> Utils.openLinkExt(context, repo + "/releases"), R.drawable.settings_version));
+            settingItems.add(new SettingsItem(context.getString(R.string.mobile_source_code),
+                    () -> Utils.openLinkExt(context, repo), R.drawable.settings_source));
+            settingItems.add(new SettingsItem(context.getString(R.string.mobile_support_author),
+                    () -> startMobileActivity(context, "com.liskovsoft.smartyoutubetv2.tv.ui.mobile.MobileDonateActivity"), R.drawable.settings_donate));
+        } else if (Helpers.equalsAny(context.getPackageName(), Utils.KNOWN_PACKAGES)) {
             settingItems.add(new SettingsItem(
                     context.getString(R.string.settings_about), () -> AboutSettingsPresenter.instance(context).show(), R.drawable.settings_about));
         } else {
             settingItems.add(new SettingsItem(
                     context.getString(R.string.settings_about), () -> AboutSimpleSettingsPresenter.instance(context).show(), R.drawable.settings_about));
-        }
-
-        if (Utils.isMobileBuild(context)) {
-            // Phones: last item, under About
-            settingItems.add(new SettingsItem(context.getString(R.string.mobile_check_updates),
-                    () -> startMobileUpdates(context), R.drawable.settings_update));
         }
 
         return settingItems;

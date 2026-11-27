@@ -8,6 +8,7 @@ import android.graphics.drawable.GradientDrawable;
 import android.view.Gravity;
 import android.view.KeyEvent;
 import android.view.View;
+import android.view.ViewGroup;
 import android.view.ViewOutlineProvider;
 import android.view.WindowManager;
 import android.widget.FrameLayout;
@@ -32,6 +33,7 @@ public class AppDialogActivity extends MotherActivity {
     private static final String TAG = AppDialogActivity.class.getSimpleName();
     private AppDialogFragment mFragment;
     private GlobalKeyTranslator mGlobalKeyTranslator;
+    private boolean mIsLandscapeSheet;
 
     @Override
     protected void onCreate(Bundle savedInstanceState) {
@@ -45,6 +47,16 @@ public class AppDialogActivity extends MotherActivity {
 
         if (Utils.isMobileBuild(this)) {
             initBottomSheet();
+
+            // Opened over a full screen (landscape) video: stay in landscape, don't turn to portrait
+            // (the player screen tells it: the dialog itself could already be started in portrait)
+            PlaybackView player = PlaybackPresenter.instance(this).getView();
+            boolean isPlayerLandscape = player instanceof MobilePlaybackActivity && !((MobilePlaybackActivity) player).isFinishing()
+                    && ViewManager.instance(this).getTopView() == PlaybackView.class
+                    && ((MobilePlaybackActivity) player).getResources().getConfiguration().orientation == android.content.res.Configuration.ORIENTATION_LANDSCAPE;
+            if (isPlayerLandscape) {
+                setRequestedOrientation(ActivityInfo.SCREEN_ORIENTATION_SENSOR_LANDSCAPE);
+            }
         }
     }
 
@@ -77,21 +89,29 @@ public class AppDialogActivity extends MotherActivity {
             return;
         }
 
+        // Portrait: a sheet at the bottom. Landscape (full screen video): a floating panel in the middle, like the YouTube app.
+        boolean isLandscape = width > height;
         FrameLayout.LayoutParams lp = (FrameLayout.LayoutParams) pane.getLayoutParams();
-        int sheetWidth = Math.min(width, (int) (600 * density));
-        int sheetHeight = (int) (height * (width > height ? 0.85f : 0.6f));
+        int sheetWidth = isLandscape ? Math.max((int) (360 * density), (int) (width * 0.46f)) : Math.min(width, (int) (600 * density));
+        int sheetHeight = (int) (height * (isLandscape ? 0.9f : 0.62f));
+        int bottomMargin = isLandscape ? (int) (8 * density) : 0;
 
-        if (lp.width != sheetWidth || lp.height != sheetHeight || lp.gravity != (Gravity.BOTTOM | Gravity.CENTER_HORIZONTAL)) {
+        if (lp.width != sheetWidth || lp.height != sheetHeight || lp.bottomMargin != bottomMargin
+                || lp.gravity != (Gravity.BOTTOM | Gravity.CENTER_HORIZONTAL)) {
             lp.width = sheetWidth;
             lp.height = sheetHeight;
+            lp.bottomMargin = bottomMargin;
             lp.gravity = Gravity.BOTTOM | Gravity.CENTER_HORIZONTAL;
             pane.setLayoutParams(lp);
+            pane.setPadding(0, (int) (20 * density), 0, 0); // room for the handle
         }
 
-        if (!(pane.getBackground() instanceof GradientDrawable)) {
+        if (!(pane.getBackground() instanceof GradientDrawable) || isLandscape != mIsLandscapeSheet) {
+            mIsLandscapeSheet = isLandscape;
             GradientDrawable background = new GradientDrawable();
-            float radius = 12 * density;
-            background.setCornerRadii(new float[] {radius, radius, radius, radius, 0, 0, 0, 0});
+            float radius = 16 * density;
+            float bottom = isLandscape ? radius : 0;
+            background.setCornerRadii(new float[] {radius, radius, radius, radius, bottom, bottom, bottom, bottom});
             background.setColor(0xFF212121);
             pane.setBackground(background);
             if (VERSION.SDK_INT >= 21) {
@@ -100,8 +120,27 @@ public class AppDialogActivity extends MotherActivity {
             }
         }
 
+        // Handle bar at the top of the sheet
+        ViewGroup container = (ViewGroup) pane.getParent();
+        if (container != null) {
+            View handle = container.findViewWithTag("mobile_sheet_handle");
+            if (handle == null) {
+                handle = new View(this);
+                handle.setTag("mobile_sheet_handle");
+                GradientDrawable shape = new GradientDrawable();
+                shape.setCornerRadius(2 * density);
+                shape.setColor(0x66FFFFFF);
+                handle.setBackground(shape);
+                container.addView(handle);
+            }
+            FrameLayout.LayoutParams handleLp = new FrameLayout.LayoutParams((int) (36 * density), (int) (4 * density));
+            handleLp.gravity = Gravity.BOTTOM | Gravity.CENTER_HORIZONTAL;
+            handleLp.bottomMargin = bottomMargin + sheetHeight - (int) (12 * density);
+            handle.setLayoutParams(handleLp);
+            handle.bringToFront();
+        }
+
         // Tap outside the sheet: close
-        View container = (View) pane.getParent();
         if (container != null && !container.hasOnClickListeners()) {
             container.setOnClickListener(v -> finish());
             pane.setClickable(true); // don't close on taps inside

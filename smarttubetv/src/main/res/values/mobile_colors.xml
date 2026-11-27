@@ -19,4 +19,5 @@
     <color name="mobile_live">#CC0000</color>
     <color name="mobile_link">#3EA6FF</color>
     <color name="mobile_badge_bg">#CC000000</color>
+    <color name="mobile_ripple">#1F000000</color>
 </resources>

@@ -1,0 +1,6 @@
+<?xml version="1.0" encoding="utf-8"?>
+<!-- Before Android 5 (TV build only): grey when pressed -->
+<selector xmlns:android="http://schemas.android.com/apk/res/android">
+    <item android:state_pressed="true"><color android:color="@color/mobile_ripple" /></item>
+    <item><color android:color="#00000000" /></item>
+</selector>

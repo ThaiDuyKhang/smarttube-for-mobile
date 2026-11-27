@@ -49,6 +49,26 @@ public class AppPreferenceManager {
     }
 
     public Preference createPreference(OptionCategory category) {
+        Preference preference = createPreferenceInt(category);
+
+        if (preference != null && Utils.isMobileBuild(mContext)) {
+            // Phones: an icon on every row, the chosen value under a list (like the YouTube app menus)
+            preference.setIcon(com.liskovsoft.smartyoutubetv2.tv.ui.mobile.MobileMenuIcons.forTitle(mContext, preference.getTitle()));
+
+            if (category.type == OptionCategory.TYPE_RADIO_LIST && category.options != null) {
+                for (OptionItem item : category.options) {
+                    if (item.isSelected()) {
+                        preference.setSummary(item.getTitle());
+                        break;
+                    }
+                }
+            }
+        }
+
+        return preference;
+    }
+
+    private Preference createPreferenceInt(OptionCategory category) {
         switch (category.type) {
             case OptionCategory.TYPE_CHECKBOX_LIST:
                 return createCheckedListPreference(category);

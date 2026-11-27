@@ -12,6 +12,10 @@
         <item name="android:windowTranslucentStatus" tools:targetApi="19">false</item>
         <item name="android:windowTranslucentNavigation" tools:targetApi="19">false</item>
         <item name="android:windowAnimationStyle">@style/MobileWindowAnimation</item>
+        <!-- Material press effect (grey ripple) instead of the old orange highlight of Theme.Black -->
+        <item name="android:selectableItemBackground">@drawable/mobile_ripple</item>
+        <item name="android:selectableItemBackgroundBorderless" tools:targetApi="21">@drawable/mobile_ripple_borderless</item>
+        <item name="android:colorControlHighlight" tools:targetApi="21">@color/mobile_ripple</item>
     </style>
 
     <!-- Short fades between the screens (no TV slide), e.g. a short opens in place -->
@@ -33,7 +37,7 @@
     <style name="MobilePlayerButton">
         <item name="android:layout_width">44dp</item>
         <item name="android:layout_height">44dp</item>
-        <item name="android:background">?android:attr/selectableItemBackground</item>
+        <item name="android:background">@drawable/mobile_ripple_borderless</item>
         <item name="android:scaleType">center</item>
     </style>
 
@@ -41,7 +45,7 @@
         <item name="android:layout_width">64dp</item>
         <item name="android:layout_height">wrap_content</item>
         <item name="android:layout_marginTop">14dp</item>
-        <item name="android:background">?android:attr/selectableItemBackground</item>
+        <item name="android:background">@drawable/mobile_ripple_borderless</item>
         <item name="android:drawablePadding">4dp</item>
         <item name="android:gravity">center_horizontal</item>
         <item name="android:maxLines">1</item>

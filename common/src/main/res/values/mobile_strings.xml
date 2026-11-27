@@ -79,7 +79,7 @@
     <string name="mobile_filter_live">Live</string>
     <string name="mobile_filter_continue">Continue watching</string>
     <string name="mobile_filter_unwatched">Unwatched</string>
-    <string name="mobile_donate_title">Buy the author a coffee</string>
+    <string name="mobile_donate_title">Support the author</string>
     <string name="mobile_donate_message">Thank you for using SmartTube Mobile! Scan the code with your banking app.</string>
     <string name="mobile_donate_bank">MB Bank (Military Commercial Joint Stock Bank)</string>
     <string name="mobile_copy_account">Copy account number</string>
@@ -116,4 +116,16 @@
     <string name="mobile_sort_relevant">Most relevant</string>
     <string name="mobile_sort_new_activity">New activity</string>
     <string name="mobile_sort_az">A-Z</string>
+    <string name="mobile_support_author">Support the author</string>
+    <string name="mobile_manage_accounts">Switch or manage accounts</string>
+    <string name="mobile_language">Language</string>
+    <string name="mobile_group_account">Account</string>
+    <string name="mobile_group_preferences">Interface, video and sound preferences</string>
+    <string name="mobile_group_other">Other settings</string>
+    <string name="mobile_group_help">Help and version</string>
+    <string name="mobile_more_options_player">More options</string>
+    <string name="mobile_lock_screen">Lock screen</string>
+    <string name="mobile_unlock">Tap to unlock</string>
+    <string name="mobile_auto">Auto</string>
+    <string name="mobile_playback_speed">Playback speed</string>
 </resources>

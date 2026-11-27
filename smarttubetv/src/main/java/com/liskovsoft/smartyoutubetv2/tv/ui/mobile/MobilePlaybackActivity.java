@@ -19,6 +19,7 @@ import android.view.KeyEvent;
 import android.view.MotionEvent;
 import android.view.View;
 import android.view.ViewGroup;
+import android.widget.FrameLayout;
 import android.widget.ImageButton;
 import android.widget.ImageView;
 import android.widget.LinearLayout;
@@ -128,6 +129,9 @@ public class MobilePlaybackActivity extends MobileActivity implements PlaybackVi
     private boolean mIsDescriptionShown;
     private boolean mIsAutoplayPending;
     private long mPipExitTimeMs;
+    private boolean mIsScreenLocked;
+    private View mLockOverlay;
+    private TextView mUnlockButton;
     private boolean mIsStopped;
     private boolean mIsPausedByUser;
 
@@ -619,7 +623,7 @@ public class MobilePlaybackActivity extends MobileActivity implements PlaybackVi
         findViewById(R.id.mobile_minimize).setOnClickListener(v -> onBackPressed());
         findViewById(R.id.mobile_subtitles).setOnClickListener(v -> clickButton(R.id.lb_control_closed_captioning));
         findViewById(R.id.mobile_subtitles).setOnLongClickListener(v -> longClickButton(R.id.lb_control_closed_captioning));
-        findViewById(R.id.mobile_player_settings).setOnClickListener(v -> clickButton(R.id.lb_control_high_quality));
+        findViewById(R.id.mobile_player_settings).setOnClickListener(v -> showQuickSettings());
         findViewById(R.id.mobile_previous).setOnClickListener(v -> {
             mPresenter.onPreviousClicked();
             scheduleHideControls();
@@ -707,6 +711,7 @@ public class MobilePlaybackActivity extends MobileActivity implements PlaybackVi
         });
 
         initFullscreenActions();
+        initScreenLock();
 
         // Rotation, split screen, PIP: choose the layout from the real size
         mRoot.addOnLayoutChangeListener((v, l, t, r, b, ol, ot, or, ob) -> {
@@ -720,27 +725,196 @@ public class MobilePlaybackActivity extends MobileActivity implements PlaybackVi
         rebuildList();
     }
 
+    /**
+     * Full screen: icons only in one translucent bar (like, dislike, comments, save, share, more), like the YouTube app
+     */
     private void initFullscreenActions() {
-        addFullscreenAction(R.string.mobile_like, R.id.action_thumbs_up);
-        addFullscreenAction(R.string.mobile_comments, R.id.action_chat);
-        addFullscreenAction(R.string.mobile_save, R.id.action_playlist_add);
-        addFullscreenAction(R.string.mobile_speed, R.id.action_video_speed);
-        addFullscreenAction(R.string.mobile_quality, R.id.lb_control_high_quality);
-        addFullscreenAction(R.string.mobile_share, R.id.action_share);
+        mFullscreenActions.setBackgroundResource(R.drawable.mobile_pill_translucent_bg);
+        mFullscreenActions.setPadding(dp(4), 0, dp(4), 0);
+        addFullscreenAction(R.drawable.mobile_ic_v_like, R.string.mobile_like, () -> clickButton(R.id.action_thumbs_up));
+        addFullscreenAction(R.drawable.mobile_ic_v_dislike, R.string.mobile_dislike, () -> clickButton(R.id.action_thumbs_down));
+        addFullscreenAction(R.drawable.mobile_ic_v_comment, R.string.mobile_comments, () -> clickButton(R.id.action_chat));
+        addFullscreenAction(R.drawable.mobile_ic_v_save, R.string.mobile_save, () -> clickButton(R.id.action_playlist_add));
+        addFullscreenAction(R.drawable.mobile_ic_v_share, R.string.mobile_share, () -> clickButton(R.id.action_share));
+        addFullscreenAction(R.drawable.mobile_ic_v_m_more, R.string.mobile_more_options, this::showVideoMenu);
     }
 
-    private void addFullscreenAction(int titleResId, int buttonId) {
-        TextView action = new TextView(this);
-        action.setText(titleResId);
-        action.setTextColor(0xFFFFFFFF);
-        action.setTextSize(13);
-        action.setGravity(android.view.Gravity.CENTER);
-        action.setPadding(dp(14), 0, dp(14), 0);
-        action.setBackgroundResource(R.drawable.mobile_pill_translucent_bg);
-        action.setOnClickListener(v -> clickButton(buttonId));
-        LinearLayout.LayoutParams lp = new LinearLayout.LayoutParams(ViewGroup.LayoutParams.WRAP_CONTENT, ViewGroup.LayoutParams.MATCH_PARENT);
-        lp.setMarginEnd(dp(8));
-        mFullscreenActions.addView(action, lp);
+    private void addFullscreenAction(int iconResId, int descriptionResId, Runnable action) {
+        ImageButton button = new ImageButton(this);
+        button.setImageResource(iconResId);
+        button.setContentDescription(getString(descriptionResId));
+        button.setBackgroundResource(R.drawable.mobile_ripple_borderless);
+        button.setOnClickListener(v -> {
+            action.run();
+            scheduleHideControls();
+        });
+        mFullscreenActions.addView(button, new LinearLayout.LayoutParams(dp(48), ViewGroup.LayoutParams.MATCH_PARENT));
+    }
+
+    // ------------------------------- Quick settings and screen lock -------------------------------
+
+    /**
+     * The gear: quality, speed, subtitles, screen lock, more options (like the YouTube app). Opens in the player itself,
+     * so it keeps the orientation of the video.
+     */
+    private void showQuickSettings() {
+        android.app.Dialog dialog = new android.app.Dialog(this, android.R.style.Theme_DeviceDefault_Dialog_NoActionBar);
+        LinearLayout list = new LinearLayout(this);
+        list.setOrientation(LinearLayout.VERTICAL);
+        list.setPadding(0, dp(16), 0, dp(8));
+
+        View handle = new View(this);
+        android.graphics.drawable.GradientDrawable handleShape = new android.graphics.drawable.GradientDrawable();
+        handleShape.setCornerRadius(dp(2));
+        handleShape.setColor(ContextCompat.getColor(this, R.color.mobile_text_secondary));
+        handle.setBackground(handleShape);
+        LinearLayout.LayoutParams handleLp = new LinearLayout.LayoutParams(dp(36), dp(4));
+        handleLp.gravity = android.view.Gravity.CENTER_HORIZONTAL;
+        handleLp.bottomMargin = dp(8);
+        list.addView(handle, handleLp);
+
+        FormatItem videoFormat = mPlayer != null ? getVideoFormat() : null;
+        String quality = videoFormat != null && videoFormat.getHeight() > 0 ? videoFormat.getHeight() + "p" : getString(R.string.mobile_auto);
+        String speed = Helpers.formatFloat(mPlayer != null ? getSpeed() : 1.0f) + "x";
+
+        addQuickRow(list, dialog, R.drawable.mobile_ic_m_quality, getString(R.string.mobile_quality), quality, true, this::showQualityDialog);
+        addQuickRow(list, dialog, R.drawable.mobile_ic_m_gauge, getString(R.string.mobile_playback_speed), speed, true, () -> clickButton(R.id.action_video_speed));
+        addQuickRow(list, dialog, R.drawable.mobile_ic_m_captions, getString(R.string.mobile_subtitles), null, false, () -> clickButton(R.id.lb_control_closed_captioning));
+        addQuickRow(list, dialog, R.drawable.mobile_ic_m_lock, getString(R.string.mobile_lock_screen), null, false, () -> setScreenLocked(true));
+        addQuickRow(list, dialog, R.drawable.mobile_ic_m_settings, getString(R.string.mobile_more_options_player), null, true, () -> clickButton(R.id.lb_control_high_quality));
+
+        android.widget.ScrollView scroll = new android.widget.ScrollView(this);
+        scroll.addView(list);
+        android.graphics.drawable.GradientDrawable background = new android.graphics.drawable.GradientDrawable();
+        float radius = dp(16);
+        boolean isLandscape = isLandscape();
+        background.setCornerRadii(isLandscape ? new float[] {radius, radius, radius, radius, radius, radius, radius, radius} :
+                new float[] {radius, radius, radius, radius, 0, 0, 0, 0});
+        background.setColor(ContextCompat.getColor(this, R.color.mobile_surface));
+        scroll.setBackground(background);
+        dialog.setContentView(scroll);
+
+        android.view.Window window = dialog.getWindow();
+        if (window != null) {
+            window.setBackgroundDrawable(new android.graphics.drawable.ColorDrawable(0));
+            int screenWidth = mRoot.getWidth();
+            window.setLayout(isLandscape ? Math.max(dp(360), (int) (screenWidth * 0.46f)) : ViewGroup.LayoutParams.MATCH_PARENT,
+                    ViewGroup.LayoutParams.WRAP_CONTENT);
+            window.setGravity(android.view.Gravity.BOTTOM | android.view.Gravity.CENTER_HORIZONTAL);
+            android.view.WindowManager.LayoutParams params = window.getAttributes();
+            params.y = isLandscape ? dp(8) : 0;
+            params.dimAmount = 0.5f;
+            window.setAttributes(params);
+            window.addFlags(android.view.WindowManager.LayoutParams.FLAG_DIM_BEHIND);
+            if (mIsFullscreen) {
+                // Don't bring the system bars back over the full screen video
+                window.addFlags(android.view.WindowManager.LayoutParams.FLAG_NOT_FOCUSABLE);
+            }
+        }
+
+        mHandler.removeCallbacks(mHideControls);
+        dialog.setOnDismissListener(d -> scheduleHideControls());
+        dialog.show();
+        if (window != null && mIsFullscreen) {
+            window.clearFlags(android.view.WindowManager.LayoutParams.FLAG_NOT_FOCUSABLE);
+        }
+    }
+
+    private void addQuickRow(LinearLayout list, android.app.Dialog dialog, int iconResId, String title, String value, boolean hasChevron, Runnable action) {
+        View row = getLayoutInflater().inflate(R.layout.mobile_quick_sheet_row, list, false);
+        ((ImageView) row.findViewById(R.id.mobile_row_icon)).setImageResource(iconResId);
+        ((TextView) row.findViewById(R.id.mobile_row_title)).setText(title);
+        TextView valueView = row.findViewById(R.id.mobile_row_value);
+        valueView.setText(value);
+        valueView.setVisibility(value != null ? View.VISIBLE : View.GONE);
+        row.findViewById(R.id.mobile_row_chevron).setVisibility(hasChevron ? View.VISIBLE : View.GONE);
+        row.setOnClickListener(v -> {
+            dialog.dismiss();
+            action.run();
+        });
+        list.addView(row);
+    }
+
+    /**
+     * The video qualities of this video (radio list); the choice is kept for the next videos
+     */
+    private void showQualityDialog() {
+        List<FormatItem> formats = mPlayer != null ? getVideoFormats() : null;
+
+        if (formats == null || formats.isEmpty()) {
+            clickButton(R.id.lb_control_high_quality);
+            return;
+        }
+
+        FormatItem current = getVideoFormat();
+        String[] titles = new String[formats.size()];
+        int checked = -1;
+        for (int i = 0; i < formats.size(); i++) {
+            titles[i] = String.valueOf(formats.get(i).getTitle());
+            if (formats.get(i).equals(current)) {
+                checked = i;
+            }
+        }
+
+        new android.app.AlertDialog.Builder(this, com.liskovsoft.smartyoutubetv2.common.utils.MobileThemeHelper.isLight(this) ?
+                android.R.style.Theme_DeviceDefault_Light_Dialog_Alert : android.R.style.Theme_DeviceDefault_Dialog_Alert)
+                .setTitle(R.string.mobile_quality)
+                .setSingleChoiceItems(titles, checked, (d, which) -> {
+                    d.dismiss();
+                    FormatItem format = formats.get(which);
+                    setFormat(format);
+                    PlayerData.instance(this).setFormat(format);
+                    bindDetails();
+                })
+                .show();
+    }
+
+    /**
+     * Screen lock: touches don't control the video until it is unlocked (the lock button)
+     */
+    private void setScreenLocked(boolean locked) {
+        mIsScreenLocked = locked;
+        showControls(false);
+        mLockOverlay.setVisibility(locked ? View.VISIBLE : View.GONE);
+        mUnlockButton.setVisibility(locked ? View.VISIBLE : View.GONE);
+        if (locked) {
+            mHandler.postDelayed(mHideUnlockButton, 2_500);
+        }
+    }
+
+    private final Runnable mHideUnlockButton = () -> {
+        if (mUnlockButton != null) {
+            mUnlockButton.setVisibility(View.GONE);
+        }
+    };
+
+    private void initScreenLock() {
+        FrameLayout container = (FrameLayout) mPlayerContainer;
+        mLockOverlay = new View(this);
+        mLockOverlay.setClickable(true);
+        mLockOverlay.setVisibility(View.GONE);
+        mLockOverlay.setOnClickListener(v -> {
+            // A tap shows the unlock button for a moment
+            mUnlockButton.setVisibility(View.VISIBLE);
+            mHandler.removeCallbacks(mHideUnlockButton);
+            mHandler.postDelayed(mHideUnlockButton, 2_500);
+        });
+        container.addView(mLockOverlay, new FrameLayout.LayoutParams(ViewGroup.LayoutParams.MATCH_PARENT, ViewGroup.LayoutParams.MATCH_PARENT));
+
+        mUnlockButton = new TextView(this);
+        mUnlockButton.setText(R.string.mobile_unlock);
+        mUnlockButton.setTextColor(0xFFFFFFFF);
+        mUnlockButton.setTextSize(14);
+        mUnlockButton.setGravity(android.view.Gravity.CENTER_VERTICAL);
+        mUnlockButton.setCompoundDrawablesWithIntrinsicBounds(R.drawable.mobile_ic_v_m_lock_open, 0, 0, 0);
+        mUnlockButton.setCompoundDrawablePadding(dp(8));
+        mUnlockButton.setPadding(dp(16), 0, dp(18), 0);
+        mUnlockButton.setBackgroundResource(R.drawable.mobile_pill_translucent_bg);
+        mUnlockButton.setVisibility(View.GONE);
+        mUnlockButton.setOnClickListener(v -> setScreenLocked(false));
+        FrameLayout.LayoutParams lp = new FrameLayout.LayoutParams(ViewGroup.LayoutParams.WRAP_CONTENT, dp(40));
+        lp.gravity = android.view.Gravity.CENTER;
+        container.addView(mUnlockButton, lp);
     }
 
     // ------------------------------- Layout: portrait page, full screen, shorts -------------------------------

@@ -18,7 +18,7 @@
             android:id="@+id/mobile_donate_back"
             android:layout_width="48dp"
             android:layout_height="48dp"
-            android:background="?android:attr/selectableItemBackground"
+            android:background="@drawable/mobile_ripple_borderless"
             android:contentDescription="@string/mobile_back"
             android:src="@drawable/mobile_ic_back" />
 

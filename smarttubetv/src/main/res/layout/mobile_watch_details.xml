@@ -158,7 +158,7 @@
                     android:id="@+id/mobile_watch_dislike"
                     android:layout_width="wrap_content"
                     android:layout_height="match_parent"
-                    android:background="?android:attr/selectableItemBackground"
+                    android:background="@drawable/mobile_ripple_borderless"
                     android:contentDescription="@string/mobile_dislike"
                     android:paddingStart="12dp"
                     android:paddingEnd="14dp"
@@ -186,11 +186,13 @@
             <TextView
                 android:id="@+id/mobile_watch_speed"
                 style="@style/MobilePill"
+                android:drawableStart="@drawable/mobile_ic_m_gauge"
                 android:text="@string/mobile_speed" />
 
             <TextView
                 android:id="@+id/mobile_watch_quality"
                 style="@style/MobilePill"
+                android:drawableStart="@drawable/mobile_ic_m_quality"
                 android:text="@string/mobile_quality" />
 
             <TextView
@@ -202,6 +204,7 @@
             <TextView
                 android:id="@+id/mobile_watch_pip"
                 style="@style/MobilePill"
+                android:drawableStart="@drawable/mobile_ic_m_pip"
                 android:text="@string/mobile_pip" />
         </LinearLayout>
     </HorizontalScrollView>

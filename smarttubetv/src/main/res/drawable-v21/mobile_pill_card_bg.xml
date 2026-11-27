@@ -1,0 +1,7 @@
+<?xml version="1.0" encoding="utf-8"?>
+<!-- Material press effect over the grey pill -->
+<ripple xmlns:android="http://schemas.android.com/apk/res/android" android:color="@color/mobile_ripple">
+    <item>
+        <shape android:shape="rectangle"><solid android:color="@color/mobile_chip" /><corners android:radius="12dp" /></shape>
+    </item>
+</ripple>

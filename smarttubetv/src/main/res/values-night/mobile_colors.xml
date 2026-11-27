@@ -15,4 +15,5 @@
     <color name="mobile_icon">#FFFFFF</color>
     <color name="mobile_thumb_placeholder">#272727</color>
     <color name="mobile_scrim">#99000000</color>
+    <color name="mobile_ripple">#33FFFFFF</color>
 </resources>

@@ -77,7 +77,7 @@
     <string name="mobile_filter_live">Trực tiếp</string>
     <string name="mobile_filter_continue">Tiếp tục xem</string>
     <string name="mobile_filter_unwatched">Chưa xem</string>
-    <string name="mobile_donate_title">Tặng tác giả ly cà phê</string>
+    <string name="mobile_donate_title">Ủng hộ tác giả</string>
     <string name="mobile_donate_message">Cảm ơn bạn đã dùng SmartTube Mobile! Quét mã bằng ứng dụng ngân hàng để ủng hộ tác giả.</string>
     <string name="mobile_donate_bank">Ngân hàng TMCP Quân Đội (MB Bank)</string>
     <string name="mobile_copy_account">Sao chép số tài khoản</string>
@@ -114,4 +114,16 @@
     <string name="mobile_sort_relevant">Liên quan nhất</string>
     <string name="mobile_sort_new_activity">Hoạt động mới</string>
     <string name="mobile_sort_az">A-Z</string>
+    <string name="mobile_support_author">Ủng hộ tác giả</string>
+    <string name="mobile_manage_accounts">Chuyển đổi hoặc quản lý tài khoản</string>
+    <string name="mobile_language">Ngôn ngữ</string>
+    <string name="mobile_group_account">Tài khoản</string>
+    <string name="mobile_group_preferences">Lựa chọn ưu tiên về giao diện, video và âm thanh</string>
+    <string name="mobile_group_other">Cài đặt khác</string>
+    <string name="mobile_group_help">Trợ giúp và phiên bản</string>
+    <string name="mobile_more_options_player">Tuỳ chọn khác</string>
+    <string name="mobile_lock_screen">Khoá màn hình</string>
+    <string name="mobile_unlock">Nhấn để mở khoá</string>
+    <string name="mobile_auto">Tự động</string>
+    <string name="mobile_playback_speed">Tốc độ phát</string>
 </resources>

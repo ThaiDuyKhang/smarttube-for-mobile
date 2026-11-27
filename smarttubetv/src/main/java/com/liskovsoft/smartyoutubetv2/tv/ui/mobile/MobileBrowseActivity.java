@@ -437,6 +437,12 @@ public class MobileBrowseActivity extends MobileActivity implements BrowseView, 
     private void openSectionById(int sectionId) {
         BrowseSection section = findSection(sectionId);
 
+        // Shorts and Subscriptions are fixed tabs: turned off in the section menu? Turn them on again.
+        if (section == null && (sectionId == MediaGroup.TYPE_SHORTS || sectionId == MediaGroup.TYPE_SUBSCRIPTIONS)) {
+            mPresenter.enableSection(sectionId, true);
+            section = findSection(sectionId);
+        }
+
         if (section != null) {
             openSection(section);
         } else if (sectionId == MediaGroup.TYPE_HISTORY) {
@@ -889,10 +895,12 @@ public class MobileBrowseActivity extends MobileActivity implements BrowseView, 
             return;
         }
 
-        List<SettingsItem> settings = new ArrayList<>(mSettings);
-        MobileOrder.sort(this, ORDER_SETTINGS, settings, this::settingKey);
-        for (SettingsItem setting : settings) {
-            items.add(MobileFeedAdapter.Item.setting(setting));
+        if (!mSettings.isEmpty() && mCurrentSection != null && mCurrentSection.getId() == MediaGroup.TYPE_SETTINGS) {
+            addSettingGroups(items);
+        } else {
+            for (SettingsItem setting : mSettings) {
+                items.add(MobileFeedAdapter.Item.setting(setting));
+            }
         }
 
         boolean showTitles = mCurrentSection != null && mCurrentSection.getType() == BrowseSection.TYPE_ROW;
@@ -1198,6 +1206,87 @@ public class MobileBrowseActivity extends MobileActivity implements BrowseView, 
         return false;
     }
 
+    // Settings like the YouTube app: groups in this order (resource names of the row icons), the rest goes to "other"
+    private static final String[][] SETTING_GROUPS = {
+            {"account", "settings_app", "settings_account", "settings_theme", "settings_language"},
+            {"preferences", "settings_main_ui", "settings_player", "settings_afr", "settings_subtitles", "settings_cast"},
+            {"other", "settings_search", "settings_block", "settings_dearrow", "settings_backup", "settings_update"},
+            {"help", "settings_version", "settings_source", "settings_donate"}};
+    private final java.util.Map<String, SettingsItem> mRenamedSettings = new java.util.HashMap<>();
+
+    private void addSettingGroups(List<MobileFeedAdapter.Item> items) {
+        java.util.Map<String, List<SettingsItem>> groups = new java.util.LinkedHashMap<>();
+        for (String[] group : SETTING_GROUPS) {
+            groups.put(group[0], new ArrayList<>());
+        }
+
+        for (SettingsItem setting : mSettings) {
+            String key = settingKey(setting);
+            String groupName = "other";
+            for (String[] group : SETTING_GROUPS) {
+                if (Arrays.asList(group).subList(1, group.length).contains(key)) {
+                    groupName = group[0];
+                }
+            }
+            groups.get(groupName).add(renameSetting(setting, key));
+        }
+
+        boolean isFirst = true;
+        for (String[] group : SETTING_GROUPS) {
+            List<SettingsItem> rows = groups.get(group[0]);
+            if (rows.isEmpty()) {
+                continue;
+            }
+            // Default order of the group, then the order the user gave by dragging
+            List<String> defaults = Arrays.asList(group).subList(1, group.length);
+            java.util.Collections.sort(rows, (a, b) -> Integer.compare(rank(defaults, settingKey(a)), rank(defaults, settingKey(b))));
+            MobileOrder.sort(this, ORDER_SETTINGS + "_" + group[0], rows, this::settingKey);
+
+            items.add(MobileFeedAdapter.Item.section(getString(getGroupTitle(group[0])), group[0], isFirst));
+            isFirst = false;
+            for (SettingsItem row : rows) {
+                items.add(MobileFeedAdapter.Item.setting(row));
+            }
+        }
+    }
+
+    private static int rank(List<String> order, String key) {
+        int index = order.indexOf(key);
+        return index >= 0 ? index : order.size();
+    }
+
+    private static int getGroupTitle(String group) {
+        switch (group) {
+            case "account":
+                return R.string.mobile_group_account;
+            case "preferences":
+                return R.string.mobile_group_preferences;
+            case "help":
+                return R.string.mobile_group_help;
+            default:
+                return R.string.mobile_group_other;
+        }
+    }
+
+    /**
+     * Phone names of some rows ("Accounts" -> "Switch or manage accounts", "Language/Country" -> "Language")
+     */
+    private SettingsItem renameSetting(SettingsItem setting, String key) {
+        int titleResId = "settings_account".equals(key) ? R.string.mobile_manage_accounts :
+                "settings_language".equals(key) ? R.string.mobile_language : 0;
+
+        if (titleResId == 0) {
+            return setting;
+        }
+
+        SettingsItem renamed = mRenamedSettings.get(key);
+        if (renamed == null || renamed.onClick != setting.onClick) {
+            renamed = new SettingsItem(getString(titleResId), setting.onClick, setting.imageResId);
+            mRenamedSettings.put(key, renamed);
+        }
+        return renamed;
+    }
+
     /**
      * Stable key of a settings row (the language can change the titles): the section of a library row, the icon of a setting
      */
@@ -1234,8 +1323,9 @@ public class MobileBrowseActivity extends MobileActivity implements BrowseView, 
 
             @Override
             public boolean onMove(@NonNull RecyclerView recyclerView, @NonNull RecyclerView.ViewHolder from, @NonNull RecyclerView.ViewHolder to) {
-                if (to.getItemViewType() != MobileFeedAdapter.TYPE_SETTING) {
-                    return false; // only among the rows
+                if (to.getItemViewType() != MobileFeedAdapter.TYPE_SETTING
+                        || findGroup(from.getAdapterPosition()) != findGroup(to.getAdapterPosition())) {
+                    return false; // only among the rows of the same group
                 }
                 mAdapter.moveItem(from.getAdapterPosition(), to.getAdapterPosition());
                 mIsMoved = true;
@@ -1258,13 +1348,22 @@ public class MobileBrowseActivity extends MobileActivity implements BrowseView, 
                 String orderName = getRowOrderName();
                 if (mIsMoved && orderName != null) {
                     mIsMoved = false;
-                    List<String> keys = new ArrayList<>();
+                    // Every group keeps its own order
+                    java.util.Map<Object, List<String>> keys = new java.util.LinkedHashMap<>();
+                    Object group = null;
                     for (MobileFeedAdapter.Item item : mAdapter.getItems()) {
-                        if (item.getSetting() != null) {
-                            keys.add(settingKey(item.getSetting()));
+                        if (item.getTag() != null) {
+                            group = item.getTag();
+                        } else if (item.getSetting() != null) {
+                            if (!keys.containsKey(group)) {
+                                keys.put(group, new ArrayList<>());
+                            }
+                            keys.get(group).add(settingKey(item.getSetting()));
                         }
                     }
-                    MobileOrder.save(MobileBrowseActivity.this, orderName, keys);
+                    for (java.util.Map.Entry<Object, List<String>> entry : keys.entrySet()) {
+                        MobileOrder.save(MobileBrowseActivity.this, entry.getKey() != null ? orderName + "_" + entry.getKey() : orderName, entry.getValue());
+                    }
                 }
             }
 
@@ -1273,6 +1372,19 @@ public class MobileBrowseActivity extends MobileActivity implements BrowseView, 
                 // No swipe
             }
         }).attachToRecyclerView(mFeed);
+    }
+
+    /**
+     * The group (section title) above a row of the list
+     */
+    private Object findGroup(int position) {
+        List<MobileFeedAdapter.Item> items = mAdapter.getItems();
+        for (int i = Math.min(position, items.size() - 1); i >= 0; i--) {
+            if (items.get(i).getTag() != null) {
+                return items.get(i).getTag();
+            }
+        }
+        return null;
     }
 
     private String getRowOrderName() {
@@ -1634,7 +1746,8 @@ public class MobileBrowseActivity extends MobileActivity implements BrowseView, 
 
     private int getSelectableBackground() {
         android.util.TypedValue value = new android.util.TypedValue();
-        getTheme().resolveAttribute(android.R.attr.selectableItemBackground, value, true);
+        getTheme().resolveAttribute(android.os.Build.VERSION.SDK_INT >= 21 ?
+                android.R.attr.selectableItemBackgroundBorderless : android.R.attr.selectableItemBackground, value, true);
         return value.resourceId;
     }
 }

@@ -44,6 +44,7 @@ public class MobileFeedAdapter extends RecyclerView.Adapter<RecyclerView.ViewHol
     public static final int TYPE_CHANNEL = 11;
     public static final int TYPE_PILL = 12;
     public static final int TYPE_CHIPS = 13;
+    public static final int TYPE_SECTION = 14;
 
     public interface Callback {
         void onVideoClicked(Video video);
@@ -69,6 +70,7 @@ public class MobileFeedAdapter extends RecyclerView.Adapter<RecyclerView.ViewHol
         final SettingsItem setting;
         final long id;
         Runnable action;
+        Object tag;
         // Snapshot to tell if the row must be redrawn
         final float watched;
         final int count;
@@ -142,6 +144,18 @@ public class MobileFeedAdapter extends RecyclerView.Adapter<RecyclerView.ViewHol
             Item item = new Item(TYPE_PILL, null, null, title, null, makeId(TYPE_PILL, TYPE_PILL));
             item.action = action;
             return item;
+        }
+
+        /** Group title with a divider above (none on the first group) */
+        public static Item section(String title, Object groupKey, boolean isFirst) {
+            Item item = new Item(TYPE_SECTION, null, null, title, null, makeId(TYPE_SECTION, groupKey));
+            item.tag = groupKey;
+            item.action = isFirst ? null : () -> { };
+            return item;
+        }
+
+        public Object getTag() {
+            return tag;
         }
 
         /** A row of chips filled by the callback */
@@ -294,6 +308,8 @@ public class MobileFeedAdapter extends RecyclerView.Adapter<RecyclerView.ViewHol
                 return new SimpleHolder(inflater.inflate(R.layout.mobile_item_pill, parent, false));
             case TYPE_CHIPS:
                 return new SimpleHolder(inflater.inflate(R.layout.mobile_item_chips, parent, false));
+            case TYPE_SECTION:
+                return new SimpleHolder(inflater.inflate(R.layout.mobile_item_section, parent, false));
             case TYPE_VIEW:
                 if (mCustomView.getParent() instanceof ViewGroup) {
                     ((ViewGroup) mCustomView.getParent()).removeView(mCustomView);
@@ -352,6 +368,10 @@ public class MobileFeedAdapter extends RecyclerView.Adapter<RecyclerView.ViewHol
                 break;
             case TYPE_CHIPS:
                 mCallback.bindChips(holder.itemView.findViewById(R.id.mobile_row_chips));
+                break;
+            case TYPE_SECTION:
+                ((TextView) holder.itemView.findViewById(R.id.mobile_header_title)).setText(item.title);
+                holder.itemView.findViewById(R.id.mobile_section_divider).setVisibility(item.action != null ? View.VISIBLE : View.GONE);
                 break;
         }
     }
@@ -426,9 +446,12 @@ public class MobileFeedAdapter extends RecyclerView.Adapter<RecyclerView.ViewHol
      * The TV settings icons replaced with the Lucide ones
      */
     private static int toLucideIcon(int resId) {
-        if (resId == R.drawable.settings_account) return R.drawable.mobile_ic_set_account;
+        if (resId == R.drawable.settings_account) return R.drawable.mobile_ic_m_account_manage;
+        if (resId == R.drawable.settings_version) return R.drawable.mobile_ic_m_tag;
+        if (resId == R.drawable.settings_source) return R.drawable.mobile_ic_m_github;
+        if (resId == R.drawable.settings_donate) return R.drawable.mobile_ic_m_coffee;
         if (resId == R.drawable.settings_cast) return R.drawable.mobile_ic_set_cast;
-        if (resId == R.drawable.settings_language) return R.drawable.mobile_ic_set_language;
+        if (resId == R.drawable.settings_language) return R.drawable.mobile_ic_m_language;
         if (resId == R.drawable.settings_app) return R.drawable.mobile_ic_set_app;
         if (resId == R.drawable.settings_main_ui) return R.drawable.mobile_ic_set_main_ui;
         if (resId == R.drawable.settings_player) return R.drawable.mobile_ic_set_player;

@@ -1,0 +1,7 @@
+<?xml version="1.0" encoding="utf-8"?>
+<!-- Mobile build: Material press effect (light grey ripple, inside the view bounds) -->
+<ripple xmlns:android="http://schemas.android.com/apk/res/android" android:color="@color/mobile_ripple">
+    <item android:id="@android:id/mask">
+        <color android:color="#FFFFFFFF" />
+    </item>
+</ripple>

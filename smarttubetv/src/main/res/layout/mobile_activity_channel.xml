@@ -18,7 +18,7 @@
             android:id="@+id/mobile_channel_back"
             android:layout_width="48dp"
             android:layout_height="48dp"
-            android:background="?android:attr/selectableItemBackground"
+            android:background="@drawable/mobile_ripple_borderless"
             android:contentDescription="@string/mobile_back"
             android:src="@drawable/mobile_ic_back" />
 
@@ -56,7 +56,7 @@
             android:id="@+id/mobile_channel_search"
             android:layout_width="48dp"
             android:layout_height="48dp"
-            android:background="?android:attr/selectableItemBackground"
+            android:background="@drawable/mobile_ripple_borderless"
             android:contentDescription="@string/mobile_search"
             android:src="@drawable/mobile_ic_search" />
 
@@ -64,7 +64,7 @@
             android:id="@+id/mobile_channel_sort"
             android:layout_width="44dp"
             android:layout_height="48dp"
-            android:background="?android:attr/selectableItemBackground"
+            android:background="@drawable/mobile_ripple_borderless"
             android:contentDescription="@string/mobile_sort"
             android:src="@drawable/mobile_ic_tune" />
 
@@ -72,7 +72,7 @@
             android:id="@+id/mobile_channel_more"
             android:layout_width="44dp"
             android:layout_height="48dp"
-            android:background="?android:attr/selectableItemBackground"
+            android:background="@drawable/mobile_ripple_borderless"
             android:contentDescription="@string/mobile_more_options"
             android:src="@drawable/mobile_ic_more_vert" />
     </LinearLayout>
