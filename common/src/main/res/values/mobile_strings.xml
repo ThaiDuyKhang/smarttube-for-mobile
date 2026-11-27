@@ -130,4 +130,16 @@
     <string name="mobile_playback_speed">Playback speed</string>
     <string name="mobile_recent">Recent</string>
     <string name="mobile_speed_normal">Normal</string>
+    <string name="mobile_mix">Mix</string>
+    <string name="mobile_playlist">Playlist</string>
+    <string name="mobile_mix_subtitle">Mix made for you • %d videos</string>
+    <string name="mobile_playlist_subtitle">Playlist • %d videos</string>
+    <string name="mobile_save_to">Save to…</string>
+    <string name="mobile_new_playlist">New playlist</string>
+    <string name="mobile_saved_to">Saved to %s</string>
+    <string name="mobile_removed_from">Removed from %s</string>
+    <string name="mobile_playlist_name">Playlist name</string>
+    <string name="mobile_create">Create</string>
+    <string name="mobile_video_count">%d videos</string>
+    <string name="mobile_watch_again">Watch again</string>
 </resources>

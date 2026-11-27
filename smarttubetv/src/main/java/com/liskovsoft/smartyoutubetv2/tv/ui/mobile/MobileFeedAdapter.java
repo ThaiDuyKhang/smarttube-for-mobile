@@ -555,6 +555,9 @@ public class MobileFeedAdapter extends RecyclerView.Adapter<RecyclerView.ViewHol
         } else {
             badge.setVisibility(View.GONE);
         }
+
+        // Mixes and playlists: a stack of cards with the "Mix" / "N videos" label (every card type)
+        MobileCollections.decorate(badge, video);
     }
 
     static void loadImage(ImageView view, String url) {

@@ -212,8 +212,15 @@ public class MobileFeed {
      * Adds the feed items of the blocks: a header (when needed), then a shorts row or the video cards
      */
     public void addItems(List<MobileFeedAdapter.Item> items, boolean showTitles) {
+        addItems(items, showTitles, null);
+    }
+
+    /**
+     * @param skip a block shown elsewhere (e.g. the playlist being played, in its own sheet)
+     */
+    public void addItems(List<MobileFeedAdapter.Item> items, boolean showTitles, Block skip) {
         for (Block block : mBlocks) {
-            if (block.videos.isEmpty()) {
+            if (block.videos.isEmpty() || block == skip) {
                 continue;
             }
 

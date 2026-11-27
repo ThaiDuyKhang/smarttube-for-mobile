@@ -235,6 +235,7 @@ public class MobileBrowseActivity extends MobileActivity implements BrowseView, 
         mDrawerItems = findViewById(R.id.mobile_drawer_items);
 
         mFeed = findViewById(R.id.mobile_feed);
+        initPullToRefresh();
         // Phones in portrait: one card per row. Landscape and tablets: a grid, like the YouTube app.
         mLayoutManager = new GridLayoutManager(this, getSpanCount());
         mLayoutManager.setSpanSizeLookup(new GridLayoutManager.SpanSizeLookup() {
@@ -493,6 +494,8 @@ public class MobileBrowseActivity extends MobileActivity implements BrowseView, 
         mBlocks.clear();
         mSettings.clear();
         mLastLoadMoreVideo = null;
+        mEmptyPages = 0;
+        mLastVideoCount = 0;
         hideError();
         mFeed.scrollToPosition(0);
     }
@@ -962,8 +965,237 @@ public class MobileBrowseActivity extends MobileActivity implements BrowseView, 
             }
         }
 
+        if (mCurrentTab != TAB_SHORTS) {
+            items = dedupe(items);
+        }
+
+        if (isHomeAll()) {
+            loadHomeExtras();
+            items = addHomeExtras(items);
+        }
+
+        // A page of only repeated videos adds nothing: ask the next one (a few times at most)
+        int videoCount = countVideos(items);
+        if (videoCount == mLastVideoCount && mLastLoadMoreVideo != null) {
+            mEmptyPages++;
+        } else {
+            mEmptyPages = 0;
+        }
+        mLastVideoCount = videoCount;
+
         mAdapter.setItems(items);
         mHandler.post(this::checkLoadMore); // the page could be shorter than the screen
+    }
+
+    // ------------------------------- Home "All": no repeats, subscriptions, Shorts, listen again -------------------------------
+
+    private List<Video> mHomeSubs;
+    private List<Video> mHomeShorts;
+    private List<Video> mHomeListenAgain;
+    private String mHomeListenAgainTitle;
+    private boolean mHomeExtrasRequested;
+    private int mLastVideoCount;
+    private int mEmptyPages;
+
+    private boolean isHomeAll() {
+        return mCurrentTab == TAB_HOME && !mIsNewToYou && mCurrentSection != null && mCurrentSection.getId() == MediaGroup.TYPE_HOME;
+    }
+
+    private static String keyOf(Video video) {
+        if (video == null) {
+            return null;
+        }
+        return video.videoId != null ? video.videoId : video.getPlaylistId() != null ? "p:" + video.getPlaylistId() :
+                video.channelId != null ? "c:" + video.channelId : null;
+    }
+
+    /**
+     * The same video can come in several shelves and pages of the TV home: show it once
+     */
+    private static List<MobileFeedAdapter.Item> dedupe(List<MobileFeedAdapter.Item> items) {
+        java.util.Set<String> seen = new java.util.HashSet<>();
+        List<MobileFeedAdapter.Item> result = new ArrayList<>(items.size());
+
+        for (MobileFeedAdapter.Item item : items) {
+            if (item.type == MobileFeedAdapter.TYPE_VIDEO) {
+                String key = keyOf(item.video);
+                if (key != null && !seen.add(key)) {
+                    continue;
+                }
+            }
+            result.add(item);
+        }
+
+        // Headers left without videos (their shelf was all repeats)
+        List<MobileFeedAdapter.Item> clean = new ArrayList<>(result.size());
+        for (int i = 0; i < result.size(); i++) {
+            MobileFeedAdapter.Item item = result.get(i);
+            boolean header = item.type == MobileFeedAdapter.TYPE_HEADER;
+            boolean nextIsHeaderOrEnd = i + 1 >= result.size() || result.get(i + 1).type == MobileFeedAdapter.TYPE_HEADER;
+            if (header && nextIsHeaderOrEnd) {
+                continue;
+            }
+            clean.add(item);
+        }
+
+        return clean;
+    }
+
+    private static int countVideos(List<MobileFeedAdapter.Item> items) {
+        int count = 0;
+        for (MobileFeedAdapter.Item item : items) {
+            if (item.type == MobileFeedAdapter.TYPE_VIDEO) {
+                count++;
+            }
+        }
+        return count;
+    }
+
+    /**
+     * Loads once per refresh: new videos of the subscriptions (signed in), Shorts, and a "listen again" row
+     * (the music section of the account when it has one, else the recently watched videos)
+     */
+    private void loadHomeExtras() {
+        if (mHomeExtrasRequested) {
+            return;
+        }
+        mHomeExtrasRequested = true;
+
+        com.liskovsoft.mediaserviceinterfaces.ContentService service =
+                com.liskovsoft.youtubeapi.service.YouTubeServiceManager.instance().getContentService();
+
+        com.liskovsoft.sharedutils.rx.RxHelper.execute(service.getShortsObserve(),
+                group -> runOnUiThread(() -> {
+                    mHomeShorts = toVideos(group, 12);
+                    if (isHomeAll()) {
+                        rebuildFeed();
+                    }
+                }), error -> { });
+
+        if (!MobileUi.isSignedIn()) {
+            return;
+        }
+
+        com.liskovsoft.sharedutils.rx.RxHelper.execute(service.getSubscriptionsObserve(),
+                group -> runOnUiThread(() -> {
+                    mHomeSubs = toVideos(group, 40);
+                    if (isHomeAll()) {
+                        rebuildFeed();
+                    }
+                }), error -> { });
+
+        com.liskovsoft.sharedutils.rx.RxHelper.execute(service.getMusicObserve(),
+                groups -> runOnUiThread(() -> {
+                    if (groups != null) {
+                        for (com.liskovsoft.mediaserviceinterfaces.data.MediaGroup group : groups) {
+                            String title = group != null ? group.getTitle() : null;
+                            if (title != null && (title.toLowerCase().contains("nghe lại") || title.toLowerCase().contains("listen again"))) {
+                                mHomeListenAgain = toVideos(group, 20);
+                                mHomeListenAgainTitle = title;
+                                break;
+                            }
+                        }
+                    }
+                    if (mHomeListenAgain == null || mHomeListenAgain.isEmpty()) {
+                        loadRecentlyWatched(service);
+                    } else if (isHomeAll()) {
+                        rebuildFeed();
+                    }
+                }), error -> runOnUiThread(() -> loadRecentlyWatched(service)));
+    }
+
+    private void loadRecentlyWatched(com.liskovsoft.mediaserviceinterfaces.ContentService service) {
+        com.liskovsoft.sharedutils.rx.RxHelper.execute(service.getHistoryObserve(),
+                group -> runOnUiThread(() -> {
+                    mHomeListenAgain = toVideos(group, 20);
+                    mHomeListenAgainTitle = getString(R.string.mobile_watch_again);
+                    if (isHomeAll()) {
+                        rebuildFeed();
+                    }
+                }), error -> { });
+    }
+
+    private static List<Video> toVideos(com.liskovsoft.mediaserviceinterfaces.data.MediaGroup group, int max) {
+        List<Video> result = new ArrayList<>();
+        if (group == null) {
+            return result;
+        }
+        VideoGroup videoGroup = VideoGroup.from(group);
+        if (videoGroup.getVideos() != null) {
+            for (Video video : videoGroup.getVideos()) {
+                if (result.size() >= max) {
+                    break;
+                }
+                if (!video.isChannel()) {
+                    result.add(video);
+                }
+            }
+        }
+        return result;
+    }
+
+    private void resetHomeExtras() {
+        mHomeSubs = null;
+        mHomeShorts = null;
+        mHomeListenAgain = null;
+        mHomeExtrasRequested = false;
+        mEmptyPages = 0;
+        mLastVideoCount = 0;
+    }
+
+    /**
+     * Like the YouTube app home: a Shorts row after the first videos, a listen again row further down, and the new
+     * videos of the subscriptions mixed in (one every three videos), without repeating what is already shown
+     */
+    private List<MobileFeedAdapter.Item> addHomeExtras(List<MobileFeedAdapter.Item> items) {
+        java.util.Set<String> seen = new java.util.HashSet<>();
+        boolean hasShorts = false;
+        for (MobileFeedAdapter.Item item : items) {
+            if (item.type == MobileFeedAdapter.TYPE_VIDEO) {
+                seen.add(keyOf(item.video));
+            } else if (item.type == MobileFeedAdapter.TYPE_SHORTS_ROW) {
+                hasShorts = true;
+            }
+        }
+
+        List<MobileFeedAdapter.Item> result = new ArrayList<>(items.size() + 16);
+        int videos = 0;
+        int subIndex = 0;
+        boolean shortsAdded = hasShorts;
+        boolean listenAdded = false;
+
+        for (MobileFeedAdapter.Item item : items) {
+            result.add(item);
+
+            if (item.type != MobileFeedAdapter.TYPE_VIDEO) {
+                continue;
+            }
+            videos++;
+
+            if (videos % 3 == 0 && mHomeSubs != null) {
+                while (subIndex < mHomeSubs.size()) {
+                    Video sub = mHomeSubs.get(subIndex++);
+                    if (seen.add(keyOf(sub))) {
+                        result.add(MobileFeedAdapter.Item.video(sub));
+                        break;
+                    }
+                }
+            }
+
+            if (!shortsAdded && videos == 3 && mHomeShorts != null && !mHomeShorts.isEmpty()) {
+                shortsAdded = true;
+                result.add(MobileFeedAdapter.Item.header(getString(R.string.mobile_filter_shorts), "home_shorts"));
+                result.add(MobileFeedAdapter.Item.shortsRow(mHomeShorts, "home_shorts"));
+            }
+
+            if (!listenAdded && videos == 8 && mHomeListenAgain != null && !mHomeListenAgain.isEmpty()) {
+                listenAdded = true;
+                result.add(MobileFeedAdapter.Item.header(mHomeListenAgainTitle, "home_listen_again"));
+                result.add(MobileFeedAdapter.Item.videoRow(mHomeListenAgain, "home_listen_again"));
+            }
+        }
+
+        return result;
     }
 
     private int getSpanCount() {
@@ -1499,8 +1731,19 @@ public class MobileBrowseActivity extends MobileActivity implements BrowseView, 
         }
 
         Video last = null;
+        // The last video of the section's own shelves (the home extras aren't part of its pages)
+        for (int i = mBlocks.size() - 1; i >= 0 && last == null; i--) {
+            List<Video> videos = mBlocks.get(i).videos;
+            if (!mBlocks.get(i).isShorts && !videos.isEmpty()) {
+                last = videos.get(videos.size() - 1);
+            }
+        }
         for (int i = count - 1; i >= 0 && last == null; i--) {
             last = mAdapter.getItems().get(i).getLastVideo();
+        }
+
+        if (mEmptyPages > 3) {
+            return; // the section keeps sending the same videos
         }
 
         if (last != null && last != mLastLoadMoreVideo && !mPresenter.hasPendingActions()) {
@@ -1673,6 +1916,7 @@ public class MobileBrowseActivity extends MobileActivity implements BrowseView, 
         hideError();
         applyGroup(group);
         rebuildFeed();
+        mStopRefreshing.run();
     }
 
     @Override
@@ -1717,6 +1961,7 @@ public class MobileBrowseActivity extends MobileActivity implements BrowseView, 
 
     @Override
     public void showError(ErrorFragmentData data) {
+        mStopRefreshing.run();
         mBlocks.clear();
         mSettings.clear();
         rebuildFeed();
@@ -1755,6 +2000,51 @@ public class MobileBrowseActivity extends MobileActivity implements BrowseView, 
     private void hideError() {
         mErrorView.setVisibility(View.GONE);
     }
+
+    // ------------------------------- Pull down to reload -------------------------------
+
+    private androidx.swiperefreshlayout.widget.SwipeRefreshLayout mRefresh;
+
+    private void initPullToRefresh() {
+        mRefresh = findViewById(R.id.mobile_refresh);
+        mRefresh.setColorSchemeColors(androidx.core.content.ContextCompat.getColor(this, R.color.mobile_accent));
+        mRefresh.setProgressBackgroundColorSchemeColor(androidx.core.content.ContextCompat.getColor(this, R.color.mobile_surface));
+        // The spinner comes down below the top bar and the chips
+        mHeader.addOnLayoutChangeListener((v, l, t, r, b, ol, ot, or, ob) -> {
+            if (b - t != ob - ot) {
+                mRefresh.setProgressViewOffset(false, b - t - dp(24), b - t + dp(40));
+            }
+        });
+        mRefresh.setOnRefreshListener(this::reloadFeed);
+    }
+
+    private void reloadFeed() {
+        if (isYouRoot()) {
+            // The You page: the account's lists again
+            mYouContent.clear();
+            rebuildFeed();
+            mRefresh.setRefreshing(false);
+            return;
+        }
+
+        if (mCurrentSection == null || !mSettings.isEmpty()) {
+            mRefresh.setRefreshing(false);
+            return;
+        }
+
+        resetHomeExtras();
+        mLastLoadMoreVideo = null;
+        mPresenter.refresh(false);
+        // Stops when the new videos arrive (or after a while: no news is good news too)
+        mHandler.removeCallbacks(mStopRefreshing);
+        mHandler.postDelayed(mStopRefreshing, 15_000);
+    }
+
+    private final Runnable mStopRefreshing = () -> {
+        if (mRefresh != null) {
+            mRefresh.setRefreshing(false);
+        }
+    };
 
     @Override
     public void showProgressBar(boolean show) {

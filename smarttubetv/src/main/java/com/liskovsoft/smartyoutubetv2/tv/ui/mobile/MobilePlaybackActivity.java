@@ -690,7 +690,7 @@ public class MobilePlaybackActivity extends MobileActivity implements PlaybackVi
         mDetails.findViewById(R.id.mobile_watch_like).setOnClickListener(v -> clickButton(R.id.action_thumbs_up));
         mDetails.findViewById(R.id.mobile_watch_dislike).setOnClickListener(v -> clickButton(R.id.action_thumbs_down));
         mDetails.findViewById(R.id.mobile_watch_share).setOnClickListener(v -> clickButton(R.id.action_share));
-        mDetails.findViewById(R.id.mobile_watch_save).setOnClickListener(v -> clickButton(R.id.action_playlist_add));
+        mDetails.findViewById(R.id.mobile_watch_save).setOnClickListener(v -> MobileSaveSheet.show(this, getVideo(), isLandscape()));
         mDetails.findViewById(R.id.mobile_watch_speed).setOnClickListener(v -> showSpeedDialog());
         mDetails.findViewById(R.id.mobile_watch_quality).setOnClickListener(v -> clickButton(R.id.lb_control_high_quality));
         mDetails.findViewById(R.id.mobile_watch_repeat).setOnClickListener(v -> clickButton(R.id.action_repeat));
@@ -738,7 +738,7 @@ public class MobilePlaybackActivity extends MobileActivity implements PlaybackVi
         addFullscreenAction(R.drawable.mobile_ic_v_like, R.string.mobile_like, () -> clickButton(R.id.action_thumbs_up));
         addFullscreenAction(R.drawable.mobile_ic_v_dislike, R.string.mobile_dislike, () -> clickButton(R.id.action_thumbs_down));
         addFullscreenAction(R.drawable.mobile_ic_v_comment, R.string.mobile_comments, () -> clickButton(R.id.action_chat));
-        addFullscreenAction(R.drawable.mobile_ic_v_save, R.string.mobile_save, () -> clickButton(R.id.action_playlist_add));
+        addFullscreenAction(R.drawable.mobile_ic_v_save, R.string.mobile_save, () -> MobileSaveSheet.show(this, getVideo(), isLandscape()));
         addFullscreenAction(R.drawable.mobile_ic_v_share, R.string.mobile_share, () -> clickButton(R.id.action_share));
         addFullscreenAction(R.drawable.mobile_ic_v_m_more, R.string.mobile_more_options, this::showVideoMenu);
     }
@@ -1581,8 +1581,94 @@ public class MobilePlaybackActivity extends MobileActivity implements PlaybackVi
     private void rebuildList() {
         List<MobileFeedAdapter.Item> items = new ArrayList<>();
         items.add(MobileFeedAdapter.Item.view());
-        mFeed.addItems(items, mFeed.getBlocks().size() > 1);
+        // The mix or playlist being played goes in its own bar and sheet, not in the related videos
+        MobileFeed.Block playlist = findPlaylistBlock();
+        bindPlaylistBar(playlist);
+        mFeed.addItems(items, mFeed.getBlocks().size() > 1, playlist);
         mFeed.setItems(items);
+    }
+
+    /**
+     * The shelf of the mix or playlist being played (most of its videos share the playlist of the current video)
+     */
+    private MobileFeed.Block findPlaylistBlock() {
+        Video current = getVideo();
+
+        if (current == null || !current.hasPlaylist()) {
+            return null;
+        }
+
+        String playlistId = current.getPlaylistId();
+
+        for (MobileFeed.Block block : mFeed.getBlocks()) {
+            if (block.isShorts || block.videos.size() < 2) {
+                continue;
+            }
+            int same = 0;
+            for (Video video : block.videos) {
+                if (playlistId.equals(video.getPlaylistId())) {
+                    same++;
+                }
+            }
+            if (same * 2 >= block.videos.size()) {
+                return block;
+            }
+        }
+
+        return null;
+    }
+
+    private void bindPlaylistBar(MobileFeed.Block playlist) {
+        View bar = mDetails.findViewById(R.id.mobile_watch_playlist);
+
+        if (playlist == null || mIsShorts) {
+            bar.setVisibility(View.GONE);
+            return;
+        }
+
+        Video current = getVideo();
+        int index = indexOf(playlist.videos, current);
+        boolean mix = current != null && current.getPlaylistId() != null && current.getPlaylistId().startsWith("RD");
+        CharSequence title = !TextUtils.isEmpty(playlist.title) ? playlist.title : getString(mix ? R.string.mobile_mix : R.string.mobile_playlist);
+
+        bar.setVisibility(View.VISIBLE);
+        ((ImageView) bar.findViewById(R.id.mobile_watch_playlist_icon)).setImageResource(mix ? R.drawable.mobile_ic_sec_live : R.drawable.mobile_ic_sec_playlists);
+        ((TextView) bar.findViewById(R.id.mobile_watch_playlist_title)).setText(title);
+        Video next = index >= 0 && index + 1 < playlist.videos.size() ? playlist.videos.get(index + 1) : null;
+        String position = index >= 0 ? (index + 1) + "/" + playlist.videos.size() : String.valueOf(playlist.videos.size());
+        ((TextView) bar.findViewById(R.id.mobile_watch_playlist_next)).setText(next != null ?
+                getString(R.string.mobile_up_next, next.getTitle()) + " • " + position : position);
+        bar.setOnClickListener(v -> MobilePlaylistSheet.show(this, title,
+                mix ? getString(R.string.mobile_mix_subtitle, playlist.videos.size()) : getString(R.string.mobile_playlist_subtitle, playlist.videos.size()),
+                new ArrayList<>(playlist.videos), current, isLandscape(), new MobilePlaylistSheet.Listener() {
+                    @Override
+                    public void onVideoPicked(Video video) {
+                        mPresenter.onSuggestionItemClicked(video);
+                    }
+
+                    @Override
+                    public void onRepeatClicked() {
+                        clickButton(R.id.action_repeat);
+                    }
+
+                    @Override
+                    public boolean isRepeatOn() {
+                        return getButtonState(R.id.action_repeat) == PlayerUI.BUTTON_ON;
+                    }
+                }));
+    }
+
+    private static int indexOf(List<Video> videos, Video video) {
+        if (video == null) {
+            return -1;
+        }
+        for (int i = 0; i < videos.size(); i++) {
+            Video item = videos.get(i);
+            if (item.videoId != null && item.videoId.equals(video.videoId)) {
+                return i;
+            }
+        }
+        return -1;
     }
 
     private void setShorts(boolean isShorts) {

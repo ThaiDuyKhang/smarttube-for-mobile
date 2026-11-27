@@ -128,4 +128,16 @@
     <string name="mobile_playback_speed">Tốc độ phát</string>
     <string name="mobile_recent">Gần đây</string>
     <string name="mobile_speed_normal">Bình thường</string>
+    <string name="mobile_mix">Tuyển tập</string>
+    <string name="mobile_playlist">Danh sách phát</string>
+    <string name="mobile_mix_subtitle">Danh sách kết hợp dành cho bạn • %d video</string>
+    <string name="mobile_playlist_subtitle">Danh sách phát • %d video</string>
+    <string name="mobile_save_to">Lưu vào…</string>
+    <string name="mobile_new_playlist">Danh sách phát mới</string>
+    <string name="mobile_saved_to">Đã lưu vào %s</string>
+    <string name="mobile_removed_from">Đã xoá khỏi %s</string>
+    <string name="mobile_playlist_name">Tên danh sách phát</string>
+    <string name="mobile_create">Tạo</string>
+    <string name="mobile_video_count">%d video</string>
+    <string name="mobile_watch_again">Xem lại gần đây</string>
 </resources>
