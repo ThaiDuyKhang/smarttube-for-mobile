@@ -207,6 +207,7 @@ public class MobilePlaybackActivity extends MobileActivity implements PlaybackVi
 
         blockEngine(false); // reset bg mode
         mPipExitTimeMs = 0; // expanded from the small window (not closed)
+        updatePlaybackService(); // back on the screen: no service needed unless background play is on
         mHandler.post(mUpdateProgress);
         applyLayout();
     }
@@ -386,6 +387,8 @@ public class MobilePlaybackActivity extends MobileActivity implements PlaybackVi
     public void onPictureInPictureModeChanged(boolean isInPictureInPictureMode) {
         super.onPictureInPictureModeChanged(isInPictureInPictureMode);
 
+        updatePlaybackService(); // the small window keeps playing with the screen off
+
         if (!isInPictureInPictureMode) {
             if (mIsStopped) {
                 // Android 10+: X pressed on the small window (onStop came first)
@@ -433,6 +436,7 @@ public class MobilePlaybackActivity extends MobileActivity implements PlaybackVi
     private void enterPip() {
         blockEngine(true); // keep the engine for the small window
         getViewManager().blockTop(this);
+        updatePlaybackService();
 
         try {
             if (Build.VERSION.SDK_INT >= 26) {
@@ -1298,10 +1302,13 @@ public class MobilePlaybackActivity extends MobileActivity implements PlaybackVi
     }
 
     /**
-     * Lock screen and notification controls while a video plays with background play on
+     * Lock screen and notification controls while a video plays with background play on, or in the small window (PIP).
+     * The foreground service also keeps the CPU and Wi-Fi awake and the network allowed while the screen is off:
+     * without it the system cuts the network of the app and the video stops loading until the screen is on again.
      */
     private void updatePlaybackService() {
-        if (mPlayer == null || !isBackgroundPlayEnabled() || !containsMedia()) {
+        boolean keepAlive = isBackgroundPlayEnabled() || isInPipMode() || isEngineBlocked();
+        if (mPlayer == null || !keepAlive || !containsMedia()) {
             MobilePlaybackService.stop(this);
             return;
         }
