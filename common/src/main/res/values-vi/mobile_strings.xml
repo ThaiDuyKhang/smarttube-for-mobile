@@ -140,4 +140,8 @@
     <string name="mobile_create">Tạo</string>
     <string name="mobile_video_count">%d video</string>
     <string name="mobile_watch_again">Xem lại gần đây</string>
+    <string name="mobile_mix_title">Danh sách kết hợp – %s</string>
+    <string name="mobile_mix_artists">%s và nhiều nghệ sĩ khác</string>
+    <string name="mobile_listen_again">Nghe lại</string>
+    <string name="mobile_mixes_for_you">Tuyển tập dành cho bạn</string>
 </resources>

@@ -142,4 +142,8 @@
     <string name="mobile_create">Create</string>
     <string name="mobile_video_count">%d videos</string>
     <string name="mobile_watch_again">Watch again</string>
+    <string name="mobile_mix_title">Mix – %s</string>
+    <string name="mobile_mix_artists">%s and more</string>
+    <string name="mobile_listen_again">Listen again</string>
+    <string name="mobile_mixes_for_you">Mixes for you</string>
 </resources>

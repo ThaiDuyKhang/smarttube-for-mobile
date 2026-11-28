@@ -430,6 +430,7 @@ public class MobileFeedAdapter extends RecyclerView.Adapter<RecyclerView.ViewHol
     }
 
     private void bindVideo(View view, Video video) {
+        MobileFeedEngine.markShown(view.getContext(), video); // the next opens and refreshes put new videos first
         AspectRatioImageView thumb = view.findViewById(R.id.mobile_thumb);
         roundThumb((View) thumb.getParent());
         loadImage(thumb, video.getCardImageUrl());

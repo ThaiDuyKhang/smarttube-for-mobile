@@ -34,7 +34,7 @@ public final class MobileCollections {
      * A mix or a playlist (not a single video, not a channel)
      */
     public static boolean isCollection(Video video) {
-        if (video == null || video.isLive) {
+        if (video == null || video.isLive || video.isUpcoming) {
             return false;
         }
 
@@ -48,7 +48,15 @@ public final class MobileCollections {
             return false;
         }
 
-        if (video.isMix() || video.itemType == MediaItem.TYPE_PLAYLIST || (video.videoId == null && video.hasPlaylist())) {
+        // A mix made from a video (radio playlist "RD..." with a "Mix" label, not a length)
+        String playlistId = video.getPlaylistId();
+        if (playlistId != null && playlistId.startsWith("RD") && !TextUtils.isEmpty(video.badge) && !video.badge.matches(".*\\d+:\\d\\d.*")) {
+            return true;
+        }
+
+        // (isMix() alone also matches premieres and streams to come: a mix has a playlist or no video id)
+        if ((video.isMix() && (video.hasPlaylist() || video.videoId == null)) || video.itemType == MediaItem.TYPE_PLAYLIST
+                || (video.videoId == null && video.hasPlaylist())) {
             return true;
         }
 

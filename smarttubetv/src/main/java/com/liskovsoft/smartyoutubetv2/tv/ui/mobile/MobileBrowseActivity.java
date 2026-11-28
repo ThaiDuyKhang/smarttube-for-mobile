@@ -175,6 +175,7 @@ public class MobileBrowseActivity extends MobileActivity implements BrowseView, 
     @Override
     protected void onPause() {
         super.onPause();
+        MobileFeedEngine.flush(this);
         mPresenter.onViewPaused();
     }
 
@@ -916,70 +917,66 @@ public class MobileBrowseActivity extends MobileActivity implements BrowseView, 
             }
         }
 
-        boolean showTitles = mCurrentSection != null && mCurrentSection.getType() == BrowseSection.TYPE_ROW;
+        if (mCurrentTab == TAB_HOME && mSettings.isEmpty() && mCurrentSection != null) {
+            // Chip pages: their own mix of videos and rows
+            buildChipPage(items);
+            items = dedupe(items);
+        } else {
+            boolean showTitles = mCurrentSection != null && mCurrentSection.getType() == BrowseSection.TYPE_ROW;
 
-        for (Block block : mBlocks) {
-            if (block.videos.isEmpty()) {
-                continue;
-            }
-
-            if (mCurrentTab == TAB_SHORTS) {
-                for (Video video : block.videos) {
-                    items.add(MobileFeedAdapter.Item.shortPage(video));
-                }
-                continue;
-            }
-
-            List<Video> videos = block.videos;
-            if (mIsNewToYou && mCurrentTab == TAB_HOME) {
-                if (block.isShorts) {
+            for (Block block : mBlocks) {
+                if (block.videos.isEmpty()) {
                     continue;
                 }
-                videos = shuffleNewToYou(block.videos);
-                if (videos.isEmpty()) {
+
+                if (mCurrentTab == TAB_SHORTS) {
+                    for (Video video : block.videos) {
+                        items.add(MobileFeedAdapter.Item.shortPage(video));
+                    }
                     continue;
                 }
-            } else if (mCurrentTab == TAB_SUBSCRIPTIONS && mSubsFilter != FILTER_ALL) {
-                videos = new ArrayList<>();
-                for (Video video : block.videos) {
-                    if (matchesSubsFilter(video, block.isShorts)) {
-                        videos.add(video);
+
+                List<Video> videos = block.videos;
+                if (mCurrentTab == TAB_SUBSCRIPTIONS && mSubsFilter != FILTER_ALL) {
+                    videos = new ArrayList<>();
+                    for (Video video : block.videos) {
+                        if (matchesSubsFilter(video, block.isShorts)) {
+                            videos.add(video);
+                        }
+                    }
+                    if (videos.isEmpty()) {
+                        continue;
                     }
                 }
-                if (videos.isEmpty()) {
-                    continue;
+
+                // Shelf titles (not on "New to you": one mixed list)
+                if ((showTitles || block.isShorts) && !TextUtils.isEmpty(block.title)) {
+                    items.add(MobileFeedAdapter.Item.header(block.title, block));
+                }
+
+                if (block.isShorts) {
+                    items.add(MobileFeedAdapter.Item.shortsRow(videos, block));
+                } else {
+                    for (Video video : videos) {
+                        items.add(MobileFeedAdapter.Item.video(video));
+                    }
                 }
             }
 
-            // Shelf titles (not on "New to you": one mixed list)
-            if ((showTitles || block.isShorts) && !TextUtils.isEmpty(block.title) && !mIsNewToYou) {
-                items.add(MobileFeedAdapter.Item.header(block.title, block));
+            if (mCurrentTab != TAB_SHORTS) {
+                items = dedupe(items);
             }
-
-            if (block.isShorts) {
-                items.add(MobileFeedAdapter.Item.shortsRow(videos, block));
-            } else {
-                for (Video video : videos) {
-                    items.add(MobileFeedAdapter.Item.video(video));
-                }
-            }
-        }
-
-        if (mCurrentTab != TAB_SHORTS) {
-            items = dedupe(items);
-        }
-
-        if (isHomeAll()) {
-            loadHomeExtras();
-            items = addHomeExtras(items);
         }
 
         // A page of only repeated videos adds nothing: ask the next one (a few times at most)
         int videoCount = countVideos(items);
-        if (videoCount == mLastVideoCount && mLastLoadMoreVideo != null) {
-            mEmptyPages++;
-        } else {
-            mEmptyPages = 0;
+        if (mPageArrived) {
+            mPageArrived = false;
+            if (videoCount == mLastVideoCount && mLastLoadMoreVideo != null) {
+                mEmptyPages++;
+            } else {
+                mEmptyPages = 0;
+            }
         }
         mLastVideoCount = videoCount;
 
@@ -987,26 +984,568 @@ public class MobileBrowseActivity extends MobileActivity implements BrowseView, 
         mHandler.post(this::checkLoadMore); // the page could be shorter than the screen
     }
 
-    // ------------------------------- Home "All": no repeats, subscriptions, Shorts, listen again -------------------------------
+    // ------------------------------- Chip pages: All, New to you, each topic -------------------------------
+    //
+    // All          the videos of every other chip (music, sports, gaming, news, live, trending...), the new videos of the
+    //              subscriptions, a Shorts row, listen again and mixes. Not the recommendations (that's "New to you").
+    // New to you   videos of channels you don't follow: the related videos of your subscriptions' new videos and the
+    //              recommendations, ranked by views per day and recency.
+    // A topic      the section, plus the new videos of your subscriptions on that topic and your history on it
+    //              (music: listen again and mixes for you).
+    // Every page   videos never shown on the screen come first; pull to refresh changes the order and brings up the videos
+    //              left deep in the list.
 
-    private List<Video> mHomeSubs;
-    private List<Video> mHomeShorts;
-    private List<Video> mHomeListenAgain;
-    private String mHomeListenAgainTitle;
-    private boolean mHomeExtrasRequested;
+    private final java.util.Map<String, MobileFeedEngine.Mixer> mMixers = new java.util.HashMap<>();
+    private List<Video> mSubs;
+    private final java.util.Set<String> mSubChannels = new java.util.HashSet<>();
+    private List<Video> mHistory;
+    private List<Video> mShorts;
+    private List<Video> mListenAgain;
+    private boolean mExtrasRequested;
     private int mLastVideoCount;
+    private boolean mPageArrived;
     private int mEmptyPages;
 
-    private boolean isHomeAll() {
-        return mCurrentTab == TAB_HOME && !mIsNewToYou && mCurrentSection != null && mCurrentSection.getId() == MediaGroup.TYPE_HOME;
+    // All
+    private final List<Video> mAllVideos = new ArrayList<>();
+    private final List<com.liskovsoft.mediaserviceinterfaces.data.MediaGroup> mAllNext = new ArrayList<>();
+    private int mAllPending;
+    private boolean mAllRequested;
+
+    // New to you
+    private final List<Video> mRelated = new ArrayList<>();
+    private final java.util.Map<String, Integer> mRelatedChannelHits = new java.util.HashMap<>();
+    private int mRelatedFrom;
+    private int mRelatedPending;
+
+    private String pageKey() {
+        if (mIsNewToYou) {
+            return "new";
+        }
+        return mCurrentSection != null && mCurrentSection.getId() == MediaGroup.TYPE_HOME ? "all" : "s" + (mCurrentSection != null ? mCurrentSection.getId() : -1);
+    }
+
+    private MobileFeedEngine.Mixer mixer() {
+        String key = pageKey();
+        MobileFeedEngine.Mixer mixer = mMixers.get(key);
+        if (mixer == null) {
+            mixer = new MobileFeedEngine.Mixer();
+            mMixers.put(key, mixer);
+        }
+        return mixer;
     }
 
     private static String keyOf(Video video) {
-        if (video == null) {
-            return null;
+        return MobileFeedEngine.keyOf(video);
+    }
+
+    private boolean isAllPage() {
+        return mCurrentTab == TAB_HOME && !mIsNewToYou && mCurrentSection != null && mCurrentSection.getId() == MediaGroup.TYPE_HOME;
+    }
+
+    private void buildChipPage(List<MobileFeedAdapter.Item> items) {
+        loadExtras();
+
+        if (mIsNewToYou) {
+            buildNewToYouPage(items);
+        } else if (isAllPage()) {
+            buildAllPage(items);
+        } else {
+            buildTopicPage(items);
         }
-        return video.videoId != null ? video.videoId : video.getPlaylistId() != null ? "p:" + video.getPlaylistId() :
-                video.channelId != null ? "c:" + video.channelId : null;
+    }
+
+    private void buildAllPage(List<MobileFeedAdapter.Item> items) {
+        loadAllSources();
+
+        List<Video> pool = new ArrayList<>(mAllVideos);
+        if (mSubs != null) {
+            pool.addAll(mSubs);
+        }
+        List<Video> videos = mixer().arrange(this, pool);
+
+        int musicId = MediaGroup.TYPE_MUSIC;
+        List<Video> mixes = makeMixes(musicId);
+        addWithRows(items, videos, rows -> {
+            rows.put(3, () -> addShortsRow(items));
+            rows.put(8, () -> addRow(items, getString(R.string.mobile_listen_again), mListenAgain, "row_listen"));
+            rows.put(14, () -> addRow(items, getString(R.string.mobile_mixes_for_you), mixes, "row_mixes"));
+            rows.put(22, () -> addRow(items, getString(R.string.mobile_watch_again), mHistory, "row_history"));
+        });
+
+        boolean loading = mAllPending > 0 && videos.isEmpty();
+        mProgress.setVisibility(loading ? View.VISIBLE : View.GONE);
+    }
+
+    private void buildNewToYouPage(List<MobileFeedAdapter.Item> items) {
+        loadRelated();
+
+        List<Video> candidates = new ArrayList<>(mRelated);
+        for (Block block : mBlocks) {
+            if (!block.isShorts) {
+                candidates.addAll(block.videos);
+            }
+        }
+        candidates.addAll(mAllVideos); // other chips when already loaded
+
+        List<Video> fresh = new ArrayList<>();
+        for (Video video : candidates) {
+            if (video.percentWatched > 0 || video.isUpcoming || video.isShorts || isSubscribed(video) || MobileCollections.isCollection(video)) {
+                continue;
+            }
+            fresh.add(video);
+        }
+
+        // Ranked: popular for its age, recent, channels related to several of your subscriptions
+        java.util.Random random = new java.util.Random(mixer().getSeed());
+        java.util.Map<String, Double> scores = new java.util.HashMap<>();
+        for (Video video : fresh) {
+            double score = MobileFeedEngine.discoveryScore(video, random);
+            Integer hits = mRelatedChannelHits.get(channelKey(video));
+            if (hits != null) {
+                score += Math.log(1 + hits) * 0.6;
+            }
+            scores.put(keyOf(video), score);
+        }
+        java.util.Collections.sort(fresh, (a, b) -> Double.compare(scores.get(keyOf(b)), scores.get(keyOf(a))));
+
+        List<Video> videos = mixer().arrangeRanked(this, fresh);
+        addWithRows(items, videos, rows -> { });
+    }
+
+    private void buildTopicPage(List<MobileFeedAdapter.Item> items) {
+        int sectionId = mCurrentSection.getId();
+        List<Video> pool = new ArrayList<>();
+        List<Video> shorts = new ArrayList<>();
+        java.util.Set<String> channels = new java.util.HashSet<>();
+        for (Block block : mBlocks) {
+            if (block.isShorts) {
+                shorts.addAll(block.videos);
+            } else {
+                for (Video video : block.videos) {
+                    pool.add(video);
+                    channels.add(channelKey(video));
+                }
+            }
+        }
+
+        // The new videos of your subscriptions on this topic
+        if (mSubs != null && MobileFeedEngine.hasTopic(sectionId)) {
+            for (Video video : mSubs) {
+                if (MobileFeedEngine.matchesSection(sectionId, video) || channels.contains(channelKey(video))) {
+                    pool.add(video);
+                }
+            }
+        }
+
+        List<Video> videos = mixer().arrange(this, pool);
+        List<Video> history = filterTopic(sectionId, mHistory);
+        boolean music = sectionId == MediaGroup.TYPE_MUSIC;
+        List<Video> listen = music ? (mListenAgain != null && !mListenAgain.isEmpty() ? mListenAgain : history) : null;
+        List<Video> mixes = music ? makeMixes(sectionId) : null;
+
+        addWithRows(items, videos, rows -> {
+            rows.put(3, () -> {
+                if (!shorts.isEmpty()) {
+                    items.add(MobileFeedAdapter.Item.header(getString(R.string.mobile_filter_shorts), "topic_shorts"));
+                    items.add(MobileFeedAdapter.Item.shortsRow(shorts, "topic_shorts"));
+                }
+            });
+            if (music) {
+                rows.put(5, () -> addRow(items, getString(R.string.mobile_listen_again), listen, "row_listen"));
+                rows.put(11, () -> addRow(items, getString(R.string.mobile_mixes_for_you), mixes, "row_mixes"));
+            } else {
+                rows.put(7, () -> addRow(items, getString(R.string.mobile_watch_again), history, "row_history"));
+            }
+        });
+    }
+
+    private interface RowPlan {
+        void plan(java.util.Map<Integer, Runnable> rows);
+    }
+
+    /**
+     * The videos, with rows placed after the n-th video (or at the end when the page is shorter)
+     */
+    private void addWithRows(List<MobileFeedAdapter.Item> items, List<Video> videos, RowPlan plan) {
+        java.util.TreeMap<Integer, Runnable> rows = new java.util.TreeMap<>();
+        plan.plan(rows);
+        int count = 0;
+        for (Video video : videos) {
+            items.add(MobileFeedAdapter.Item.video(video));
+            count++;
+            Runnable row = rows.remove(count);
+            if (row != null) {
+                row.run();
+            }
+        }
+        if (videos.size() > 0 && videos.size() < 6) {
+            for (Runnable row : rows.values()) {
+                row.run();
+            }
+        }
+    }
+
+    private void addRow(List<MobileFeedAdapter.Item> items, String title, List<Video> videos, String key) {
+        if (videos == null || videos.size() < 2) {
+            return;
+        }
+        items.add(MobileFeedAdapter.Item.header(title, key));
+        items.add(MobileFeedAdapter.Item.videoRow(videos, key));
+    }
+
+    private void addShortsRow(List<MobileFeedAdapter.Item> items) {
+        if (mShorts != null && mShorts.size() >= 2) {
+            items.add(MobileFeedAdapter.Item.header(getString(R.string.mobile_filter_shorts), "all_shorts"));
+            items.add(MobileFeedAdapter.Item.shortsRow(mShorts, "all_shorts"));
+        }
+    }
+
+    private static List<Video> filterTopic(int sectionId, List<Video> videos) {
+        List<Video> result = new ArrayList<>();
+        if (videos != null) {
+            for (Video video : videos) {
+                if (MobileFeedEngine.matchesSection(sectionId, video)) {
+                    result.add(video);
+                }
+            }
+        }
+        return result;
+    }
+
+    /**
+     * Mixes for you: from the music you listened to, then the music of the page
+     */
+    private List<Video> makeMixes(int musicId) {
+        List<Video> sources = new ArrayList<>();
+        if (mListenAgain != null) {
+            sources.addAll(mListenAgain);
+        }
+        sources.addAll(filterTopic(musicId, mHistory));
+        for (Block block : mBlocks) {
+            if (!block.isShorts && mCurrentSection != null && mCurrentSection.getId() == musicId) {
+                sources.addAll(block.videos);
+            }
+        }
+        sources.addAll(filterTopic(musicId, mAllVideos));
+
+        List<Video> mixes = new ArrayList<>();
+        java.util.Set<String> authors = new java.util.HashSet<>();
+        for (Video video : sources) {
+            if (mixes.size() >= 10) {
+                break;
+            }
+            // One mix per artist
+            if (video.videoId == null || video.isLive || MobileCollections.isCollection(video) || !authors.add(String.valueOf(video.getAuthor()))) {
+                continue;
+            }
+            Video mix = MobileFeedEngine.mixOf(this, video);
+            if (mix != null) {
+                mixes.add(mix);
+            }
+        }
+        return mixes;
+    }
+
+    private static String channelKey(Video video) {
+        return video.channelId != null ? video.channelId : String.valueOf(video.getAuthor());
+    }
+
+    private boolean isSubscribed(Video video) {
+        return mSubChannels.contains(channelKey(video)) || (video.getAuthor() != null && mSubChannels.contains("a:" + video.getAuthor()));
+    }
+
+    /**
+     * Subscriptions, history, Shorts, listen again: once per refresh
+     */
+    private void loadExtras() {
+        if (mExtrasRequested) {
+            return;
+        }
+        mExtrasRequested = true;
+
+        com.liskovsoft.mediaserviceinterfaces.ContentService service =
+                com.liskovsoft.youtubeapi.service.YouTubeServiceManager.instance().getContentService();
+
+        com.liskovsoft.sharedutils.rx.RxHelper.execute(service.getShortsObserve(),
+                group -> runOnUiThread(() -> {
+                    mShorts = toVideos(group, 12);
+                    rebuildIfChipPage();
+                }), error -> { });
+
+        if (!MobileUi.isSignedIn()) {
+            return;
+        }
+
+        com.liskovsoft.sharedutils.rx.RxHelper.execute(service.getSubscriptionsObserve(),
+                group -> runOnUiThread(() -> {
+                    mSubs = toVideos(group, 60);
+                    for (Video video : mSubs) {
+                        mSubChannels.add(channelKey(video));
+                        if (video.getAuthor() != null) {
+                            mSubChannels.add("a:" + video.getAuthor());
+                        }
+                    }
+                    rebuildIfChipPage();
+                }), error -> { });
+
+        com.liskovsoft.sharedutils.rx.RxHelper.execute(service.getSubscribedChannelsObserve(),
+                group -> runOnUiThread(() -> {
+                    for (Video channel : toAll(group)) {
+                        if (channel.channelId != null) {
+                            mSubChannels.add(channel.channelId);
+                        }
+                        if (channel.getTitle() != null) {
+                            mSubChannels.add("a:" + channel.getTitle());
+                        }
+                    }
+                    rebuildIfChipPage();
+                }), error -> { });
+
+        com.liskovsoft.sharedutils.rx.RxHelper.execute(service.getHistoryObserve(),
+                group -> runOnUiThread(() -> {
+                    mHistory = toVideos(group, 40);
+                    if (mListenAgain == null || mListenAgain.isEmpty()) {
+                        List<Video> music = filterTopic(MediaGroup.TYPE_MUSIC, mHistory);
+                        if (music.size() >= 2) {
+                            mListenAgain = music;
+                        }
+                    }
+                    rebuildIfChipPage();
+                }), error -> { });
+
+        // The music section of the account can have its own "listen again" shelf
+        com.liskovsoft.sharedutils.rx.RxHelper.execute(service.getMusicObserve(),
+                groups -> runOnUiThread(() -> {
+                    if (groups != null) {
+                        for (com.liskovsoft.mediaserviceinterfaces.data.MediaGroup group : groups) {
+                            String title = group != null && group.getTitle() != null ? group.getTitle().toLowerCase() : "";
+                            if (title.contains("nghe lại") || title.contains("listen again")) {
+                                List<Video> listen = toVideos(group, 20);
+                                if (listen.size() >= 2) {
+                                    mListenAgain = listen;
+                                    rebuildIfChipPage();
+                                }
+                                break;
+                            }
+                        }
+                    }
+                }), error -> { });
+    }
+
+    /**
+     * All: the sections of the other chips (not Home), first pages; more pages when scrolling
+     */
+    private void loadAllSources() {
+        if (mAllRequested) {
+            return;
+        }
+        mAllRequested = true;
+
+        com.liskovsoft.mediaserviceinterfaces.ContentService service =
+                com.liskovsoft.youtubeapi.service.YouTubeServiceManager.instance().getContentService();
+
+        for (BrowseSection section : getChipSections()) {
+            io.reactivex.Observable<List<com.liskovsoft.mediaserviceinterfaces.data.MediaGroup>> rows = null;
+            io.reactivex.Observable<com.liskovsoft.mediaserviceinterfaces.data.MediaGroup> grid = null;
+            switch (section.getId()) {
+                case MediaGroup.TYPE_MUSIC: rows = service.getMusicObserve(); break;
+                case MediaGroup.TYPE_GAMING: rows = service.getGamingObserve(); break;
+                case MediaGroup.TYPE_NEWS: rows = service.getNewsObserve(); break;
+                case MediaGroup.TYPE_SPORTS: rows = service.getSportsObserve(); break;
+                case MediaGroup.TYPE_LIVE: rows = service.getLiveObserve(); break;
+                case MediaGroup.TYPE_TRENDING: rows = service.getTrendingObserve(); break;
+                default: break;
+            }
+            if (rows != null) {
+                final int sectionId = section.getId();
+                mAllPending++;
+                com.liskovsoft.sharedutils.rx.RxHelper.execute(rows,
+                        groups -> runOnUiThread(() -> {
+                            if (groups != null) {
+                                for (com.liskovsoft.mediaserviceinterfaces.data.MediaGroup group : groups) {
+                                    addAllGroup(group, sectionId);
+                                }
+                            }
+                        }),
+                        error -> runOnUiThread(this::allSourceDone),
+                        () -> runOnUiThread(this::allSourceDone));
+            }
+        }
+
+        if (mAllPending == 0) {
+            // No other chips (e.g. turned off): the recommendations then
+            for (Block block : mBlocks) {
+                if (!block.isShorts) {
+                    mAllVideos.addAll(block.videos);
+                }
+            }
+        }
+    }
+
+    private void allSourceDone() {
+        mAllPending = Math.max(0, mAllPending - 1);
+        rebuildIfChipPage();
+    }
+
+    private final java.util.Map<com.liskovsoft.mediaserviceinterfaces.data.MediaGroup, Integer> mAllNextSection = new java.util.HashMap<>();
+
+    /**
+     * Each topic gives a few videos per page (live: fewer, the live section is long), so "All" stays a mix of topics
+     */
+    private void addAllGroup(com.liskovsoft.mediaserviceinterfaces.data.MediaGroup group, int sectionId) {
+        if (group == null) {
+            return;
+        }
+        int max = sectionId == MediaGroup.TYPE_LIVE ? 4 : 12;
+        VideoGroup videoGroup = VideoGroup.from(group);
+        if (videoGroup.isShorts()) {
+            if (mShorts == null || mShorts.isEmpty()) {
+                mShorts = toVideos(group, 12);
+            }
+            return;
+        }
+        int added = 0;
+        for (Video video : toVideos(group, 100)) {
+            // Streams to come can't be watched yet: not on "All"
+            if (added < max && !video.isShorts && !video.isUpcoming) {
+                mAllVideos.add(video);
+                added++;
+            }
+        }
+        if (group.getNextPageKey() != null) {
+            mAllNext.add(group);
+            mAllNextSection.put(group, sectionId);
+        }
+    }
+
+    /**
+     * All: the next pages of a few sources (round robin, so the page keeps mixing topics)
+     */
+    private void loadMoreAll() {
+        if (mAllPending > 0 || mAllNext.isEmpty()) {
+            return;
+        }
+
+        com.liskovsoft.mediaserviceinterfaces.ContentService service =
+                com.liskovsoft.youtubeapi.service.YouTubeServiceManager.instance().getContentService();
+        int count = Math.min(3, mAllNext.size());
+        for (int i = 0; i < count; i++) {
+            com.liskovsoft.mediaserviceinterfaces.data.MediaGroup group = mAllNext.remove(0);
+            Integer source = mAllNextSection.remove(group);
+            int sectionId = source != null ? source : -1;
+            mAllPending++;
+            com.liskovsoft.sharedutils.rx.RxHelper.execute(service.continueGroupObserve(group),
+                    next -> runOnUiThread(() -> addAllGroup(next, sectionId)),
+                    error -> runOnUiThread(this::allSourceDone),
+                    () -> runOnUiThread(this::allSourceDone));
+        }
+    }
+
+    /**
+     * New to you: the related videos of a few new videos of your subscriptions (other channels than yours)
+     */
+    private void loadRelated() {
+        if (mRelatedPending > 0 || mSubs == null || mRelatedFrom >= mSubs.size() || mRelatedFrom >= 30) {
+            return;
+        }
+
+        com.liskovsoft.mediaserviceinterfaces.MediaItemService service =
+                com.liskovsoft.youtubeapi.service.YouTubeServiceManager.instance().getMediaItemService();
+        int end = Math.min(mSubs.size(), mRelatedFrom + 5);
+        for (int i = mRelatedFrom; i < end; i++) {
+            Video source = mSubs.get(i);
+            if (source.videoId == null) {
+                continue;
+            }
+            mRelatedPending++;
+            com.liskovsoft.sharedutils.rx.RxHelper.execute(service.getMetadataObserve(source.videoId),
+                    metadata -> runOnUiThread(() -> {
+                        if (metadata != null && metadata.getSuggestions() != null) {
+                            java.util.Set<String> counted = new java.util.HashSet<>();
+                            for (com.liskovsoft.mediaserviceinterfaces.data.MediaGroup group : metadata.getSuggestions()) {
+                                for (Video video : toVideos(group, 30)) {
+                                    if (video.videoId == null || isSubscribed(video)) {
+                                        continue;
+                                    }
+                                    mRelated.add(video);
+                                    String channel = channelKey(video);
+                                    if (counted.add(channel)) {
+                                        Integer hits = mRelatedChannelHits.get(channel);
+                                        mRelatedChannelHits.put(channel, hits == null ? 1 : hits + 1);
+                                    }
+                                }
+                            }
+                        }
+                    }),
+                    error -> runOnUiThread(this::relatedDone),
+                    () -> runOnUiThread(this::relatedDone));
+        }
+        mRelatedFrom = end;
+    }
+
+    private void relatedDone() {
+        mRelatedPending = Math.max(0, mRelatedPending - 1);
+        if (mRelatedPending == 0) {
+            rebuildIfChipPage();
+        }
+    }
+
+    private void rebuildIfChipPage() {
+        if (mCurrentTab == TAB_HOME && mSettings.isEmpty()) {
+            rebuildFeed();
+        }
+    }
+
+    private static List<Video> toVideos(com.liskovsoft.mediaserviceinterfaces.data.MediaGroup group, int max) {
+        List<Video> result = new ArrayList<>();
+        for (Video video : toAll(group)) {
+            if (result.size() >= max) {
+                break;
+            }
+            if (!video.isChannel()) {
+                result.add(video);
+            }
+        }
+        return result;
+    }
+
+    private static List<Video> toAll(com.liskovsoft.mediaserviceinterfaces.data.MediaGroup group) {
+        if (group == null) {
+            return new ArrayList<>();
+        }
+        VideoGroup videoGroup = VideoGroup.from(group);
+        return videoGroup.getVideos() != null ? new ArrayList<>(videoGroup.getVideos()) : new ArrayList<>();
+    }
+
+    /**
+     * Pull to refresh on a chip page: new data, a new order, the videos never reached come first
+     */
+    private void resetChipPages(boolean keepCarry) {
+        MobileFeedEngine.Mixer mixer = mMixers.get(pageKey());
+        if (mixer != null) {
+            if (keepCarry) {
+                mixer.reshuffle(this);
+            } else {
+                mixer.clear();
+            }
+        }
+        mSubs = null;
+        mHistory = null;
+        mShorts = null;
+        mListenAgain = null;
+        mExtrasRequested = false;
+        mAllVideos.clear();
+        mAllNext.clear();
+        mAllNextSection.clear();
+        mAllPending = 0;
+        mAllRequested = false;
+        mRelated.clear();
+        mRelatedChannelHits.clear();
+        mRelatedFrom = 0;
+        mRelatedPending = 0;
+        mEmptyPages = 0;
+        mLastVideoCount = 0;
     }
 
     /**
@@ -1049,153 +1588,6 @@ public class MobileBrowseActivity extends MobileActivity implements BrowseView, 
             }
         }
         return count;
-    }
-
-    /**
-     * Loads once per refresh: new videos of the subscriptions (signed in), Shorts, and a "listen again" row
-     * (the music section of the account when it has one, else the recently watched videos)
-     */
-    private void loadHomeExtras() {
-        if (mHomeExtrasRequested) {
-            return;
-        }
-        mHomeExtrasRequested = true;
-
-        com.liskovsoft.mediaserviceinterfaces.ContentService service =
-                com.liskovsoft.youtubeapi.service.YouTubeServiceManager.instance().getContentService();
-
-        com.liskovsoft.sharedutils.rx.RxHelper.execute(service.getShortsObserve(),
-                group -> runOnUiThread(() -> {
-                    mHomeShorts = toVideos(group, 12);
-                    if (isHomeAll()) {
-                        rebuildFeed();
-                    }
-                }), error -> { });
-
-        if (!MobileUi.isSignedIn()) {
-            return;
-        }
-
-        com.liskovsoft.sharedutils.rx.RxHelper.execute(service.getSubscriptionsObserve(),
-                group -> runOnUiThread(() -> {
-                    mHomeSubs = toVideos(group, 40);
-                    if (isHomeAll()) {
-                        rebuildFeed();
-                    }
-                }), error -> { });
-
-        com.liskovsoft.sharedutils.rx.RxHelper.execute(service.getMusicObserve(),
-                groups -> runOnUiThread(() -> {
-                    if (groups != null) {
-                        for (com.liskovsoft.mediaserviceinterfaces.data.MediaGroup group : groups) {
-                            String title = group != null ? group.getTitle() : null;
-                            if (title != null && (title.toLowerCase().contains("nghe lại") || title.toLowerCase().contains("listen again"))) {
-                                mHomeListenAgain = toVideos(group, 20);
-                                mHomeListenAgainTitle = title;
-                                break;
-                            }
-                        }
-                    }
-                    if (mHomeListenAgain == null || mHomeListenAgain.isEmpty()) {
-                        loadRecentlyWatched(service);
-                    } else if (isHomeAll()) {
-                        rebuildFeed();
-                    }
-                }), error -> runOnUiThread(() -> loadRecentlyWatched(service)));
-    }
-
-    private void loadRecentlyWatched(com.liskovsoft.mediaserviceinterfaces.ContentService service) {
-        com.liskovsoft.sharedutils.rx.RxHelper.execute(service.getHistoryObserve(),
-                group -> runOnUiThread(() -> {
-                    mHomeListenAgain = toVideos(group, 20);
-                    mHomeListenAgainTitle = getString(R.string.mobile_watch_again);
-                    if (isHomeAll()) {
-                        rebuildFeed();
-                    }
-                }), error -> { });
-    }
-
-    private static List<Video> toVideos(com.liskovsoft.mediaserviceinterfaces.data.MediaGroup group, int max) {
-        List<Video> result = new ArrayList<>();
-        if (group == null) {
-            return result;
-        }
-        VideoGroup videoGroup = VideoGroup.from(group);
-        if (videoGroup.getVideos() != null) {
-            for (Video video : videoGroup.getVideos()) {
-                if (result.size() >= max) {
-                    break;
-                }
-                if (!video.isChannel()) {
-                    result.add(video);
-                }
-            }
-        }
-        return result;
-    }
-
-    private void resetHomeExtras() {
-        mHomeSubs = null;
-        mHomeShorts = null;
-        mHomeListenAgain = null;
-        mHomeExtrasRequested = false;
-        mEmptyPages = 0;
-        mLastVideoCount = 0;
-    }
-
-    /**
-     * Like the YouTube app home: a Shorts row after the first videos, a listen again row further down, and the new
-     * videos of the subscriptions mixed in (one every three videos), without repeating what is already shown
-     */
-    private List<MobileFeedAdapter.Item> addHomeExtras(List<MobileFeedAdapter.Item> items) {
-        java.util.Set<String> seen = new java.util.HashSet<>();
-        boolean hasShorts = false;
-        for (MobileFeedAdapter.Item item : items) {
-            if (item.type == MobileFeedAdapter.TYPE_VIDEO) {
-                seen.add(keyOf(item.video));
-            } else if (item.type == MobileFeedAdapter.TYPE_SHORTS_ROW) {
-                hasShorts = true;
-            }
-        }
-
-        List<MobileFeedAdapter.Item> result = new ArrayList<>(items.size() + 16);
-        int videos = 0;
-        int subIndex = 0;
-        boolean shortsAdded = hasShorts;
-        boolean listenAdded = false;
-
-        for (MobileFeedAdapter.Item item : items) {
-            result.add(item);
-
-            if (item.type != MobileFeedAdapter.TYPE_VIDEO) {
-                continue;
-            }
-            videos++;
-
-            if (videos % 3 == 0 && mHomeSubs != null) {
-                while (subIndex < mHomeSubs.size()) {
-                    Video sub = mHomeSubs.get(subIndex++);
-                    if (seen.add(keyOf(sub))) {
-                        result.add(MobileFeedAdapter.Item.video(sub));
-                        break;
-                    }
-                }
-            }
-
-            if (!shortsAdded && videos == 3 && mHomeShorts != null && !mHomeShorts.isEmpty()) {
-                shortsAdded = true;
-                result.add(MobileFeedAdapter.Item.header(getString(R.string.mobile_filter_shorts), "home_shorts"));
-                result.add(MobileFeedAdapter.Item.shortsRow(mHomeShorts, "home_shorts"));
-            }
-
-            if (!listenAdded && videos == 8 && mHomeListenAgain != null && !mHomeListenAgain.isEmpty()) {
-                listenAdded = true;
-                result.add(MobileFeedAdapter.Item.header(mHomeListenAgainTitle, "home_listen_again"));
-                result.add(MobileFeedAdapter.Item.videoRow(mHomeListenAgain, "home_listen_again"));
-            }
-        }
-
-        return result;
     }
 
     private int getSpanCount() {
@@ -1746,6 +2138,15 @@ public class MobileBrowseActivity extends MobileActivity implements BrowseView, 
             return; // the section keeps sending the same videos
         }
 
+        if (isAllPage()) {
+            loadMoreAll();
+            return;
+        }
+
+        if (mIsNewToYou && mCurrentTab == TAB_HOME) {
+            loadRelated();
+        }
+
         if (last != null && last != mLastLoadMoreVideo && !mPresenter.hasPendingActions()) {
             mLastLoadMoreVideo = last;
             mPresenter.onScrollEnd(last);
@@ -1915,6 +2316,7 @@ public class MobileBrowseActivity extends MobileActivity implements BrowseView, 
 
         hideError();
         applyGroup(group);
+        mPageArrived = true;
         rebuildFeed();
         mStopRefreshing.run();
     }
@@ -2032,7 +2434,9 @@ public class MobileBrowseActivity extends MobileActivity implements BrowseView, 
             return;
         }
 
-        resetHomeExtras();
+        if (mCurrentTab == TAB_HOME) {
+            resetChipPages(true);
+        }
         mLastLoadMoreVideo = null;
         mPresenter.refresh(false);
         // Stops when the new videos arrive (or after a while: no news is good news too)
